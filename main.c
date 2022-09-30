@@ -5,39 +5,15 @@
     \version 2019-6-5, V1.0.0, demo for GD32VF103
 */
 
-/*
-    Copyright (c) 2019, GigaDevice Semiconductor Inc.
-
-    Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice, this
-       list of conditions and the following disclaimer.
-    2. Redistributions in binary form must reproduce the above copyright notice,
-       this list of conditions and the following disclaimer in the documentation
-       and/or other materials provided with the distribution.
-    3. Neither the name of the copyright holder nor the names of its contributors
-       may be used to endorse or promote products derived from this software without
-       specific prior written permission.
-
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
-OF SUCH DAMAGE.
-*/
-
 #include "gd32vf103.h"
 #include "lcd.h"
 #include "delay.h"
 #include "gd32v_mpu6500_if.h"
+#include "usart.h"
 
 #define GRAPH_HEIGHT 30
+#define EI 1
+#define DI 0
 
 int main(void)
 {
@@ -64,10 +40,23 @@ int main(void)
     // Creates temporary vectors to erase previously drwan lines
     mpu6500_getAccel(&vec_temp);
     mpu6500_getGyro(&vec2_temp);
+    
+    // Initialize usartjanne
+    u0init(EI);
 
     while (1)
     {
         
+        //u0_TX_queue();
+
+        
+
+        if (usart_flag_get(USART0,USART_FLAG_RBNE)){ // USART0 RX?
+           //LCD_ShowChar(10,50,usart_data_receive(USART0), OPAQUE, BLUE);
+           LCD_ShowNum1(40,20,usart_data_receive(USART0),6,BLUE);
+        }
+        usart_data_transmit(USART0, vec.x); // USRAT0 TX!
+
         LCD_ShowChar(20,20,'X',TRANSPARENT, line_color);
         LCD_ShowChar(20,40,'Y',TRANSPARENT, line_color);
         LCD_ShowChar(20,60,'Z',TRANSPARENT, line_color);
@@ -89,7 +78,7 @@ int main(void)
         //LCD_DrawLine(40, 80 / 2, (40) + (vec.y) / (4096 / 28), (80 / 2) + (vec.x / (4096 / 28)), line_color);
         /* Store the last vector in temporary so it can be erased */
         
-        LCD_ShowNum1(40,20,vec.x,6,line_color);
+        //LCD_ShowNum1(40,20,vec.x,6,line_color);
         LCD_ShowNum1(40,40,vec.y,6,line_color);
         LCD_ShowNum1(40,60,vec.z,6,line_color);
 
@@ -148,3 +137,62 @@ int main(void)
         //LCD_Wait_On_Queue();
     }
 }
+
+
+
+// #include "gd32vf103.h"
+// #include "drivers.h"
+// #include "lcd.h"
+// #include "usart.h"
+// #define EI 1
+// #define DI 0
+
+
+// int main(void){
+//     int ms=0, s=0, key, pKey=-1, c=0, idle=0;
+//     int lookUpTbl[16]={1,4,7,14,2,5,8,0,3,6,9,15,10,11,12,13};
+//     int dac=0, speed=-100;
+//     int adcr, tmpr;
+//     char digits[10][10]={"Zero ","One  ","Two  ","Three","Four ","Five ","Six  ","Seven","Eight","Nine "};
+//     char msg[]="*";
+
+//     t5omsi();                               // Initialize timer5 1kHz
+//     colinit();                              // Initialize column toolbox
+//     l88init();                              // Initialize 8*8 led toolbox
+//     keyinit();                              // Initialize keyboard toolbox
+//     Lcd_SetType(LCD_NORMAL);                // or use LCD_INVERTED!
+//     Lcd_Init();
+//     LCD_Clear(RED);
+//     LCD_ShowStr(10, 10, "POLL VERSION", WHITE, TRANSPARENT);
+//     u0init(EI);                             // Initialize USART0 toolbox
+
+//     eclic_global_interrupt_enable();        // !!! INTERRUPT ENABLED !!!
+
+//     while (1) {
+//         idle++;                             // Manage Async events
+//         LCD_WR_Queue();                     // Manage LCD com queue!
+//         //u0_TX_Queue();                      // Manage U(S)ART TX Queue!
+
+//         if (usart_flag_get(USART0,USART_FLAG_RBNE)){ // USART0 RX?
+//           LCD_ShowChar(10,50,usart_data_receive(USART0), OPAQUE, WHITE);
+//         }
+
+//         if (t5expq()) {                     // Manage periodic tasks
+//             l88row(colset());               // ...8*8LED and Keyboard
+//             ms++;                           // ...One second heart beat
+//             if (ms==1000){
+//               ms=0;
+//               l88mem(0,s++);
+//               LCD_ShowStr(10, 30, digits[s%10], WHITE, OPAQUE);
+//               //usart_data_transmit(USART0, (s%10)+'0'); // USRAT0 TX!
+//               msg[0]=(s%10)+'0'; putstr(msg);
+//             }
+//             if ((key=keyscan())>=0) {       // ...Any key pressed?
+//               if (pKey==key) c++; else {c=0; pKey=key;}
+//               l88mem(1,lookUpTbl[key]+(c<<4));
+//             }
+//             l88mem(2,idle>>8);              // ...Performance monitor
+//             l88mem(3,idle); idle=0;
+//         }
+//     }
+// }
