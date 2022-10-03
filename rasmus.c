@@ -19,7 +19,7 @@
 #define ARRAYNUM(arr_nanme)      (uint32_t)(sizeof(arr_nanme) / sizeof(*(arr_nanme)))
 #define TRANSMIT_SIZE            (ARRAYNUM(txbuffer) - 1)
 
-uint8_t txbuffer[] = "Janne";
+uint8_t txbuffer[] = "Brassi";
 uint8_t rxbuffer[32];
 uint8_t tx_size = TRANSMIT_SIZE;
 uint8_t rx_size = 32;
@@ -42,28 +42,28 @@ int main(void) {
     Lcd_SetType(LCD_INVERTED);
     Lcd_Init();
     LCD_Clear(BLACK);
-    LCD_ShowChar(40,20,'A',TRANSPARENT, RED);
+    LCD_ShowChar(10,10,'A',TRANSPARENT, RED);
     delay_1ms(100);
     eclic_global_interrupt_enable();                /* USART interrupt configuration */
-    LCD_ShowChar(40,30,'B',TRANSPARENT, BLUE);
+    LCD_ShowChar(20,10,'B',TRANSPARENT, BLUE);
     delay_1ms(100);
     eclic_priority_group_set(ECLIC_PRIGROUP_LEVEL3_PRIO1);
-    LCD_ShowChar(40,40,'C',TRANSPARENT, YELLOW);
+    LCD_ShowChar(30,10,'C',TRANSPARENT, YELLOW);
     delay_1ms(100);
     eclic_irq_enable(USART0_IRQn, 1, 0);
-    LCD_ShowChar(40,50,'D',TRANSPARENT, RED);
+    LCD_ShowChar(40,10,'D',TRANSPARENT, RED);
     LCD_Wait_On_Queue();
     delay_1ms(100);
     gd_eval_com_init(EVAL_COM0);                    /* configure COM0 */
-    LCD_ShowChar(40,60,'E',TRANSPARENT, BLUE);
+    LCD_ShowChar(50,10,'E',TRANSPARENT, BLUE);
     LCD_Wait_On_Queue();
     delay_1ms(100);
     usart_interrupt_enable(USART0, USART_INT_TBE);  /* enable USART TBE interrupt */
-    LCD_ShowChar(50,20,'F',TRANSPARENT, YELLOW);
+    LCD_ShowChar(60,10,'F',TRANSPARENT, YELLOW);
     LCD_Wait_On_Queue();  
 
     while(1) {
-        LCD_Clear(BLACK);
+        // LCD_Clear(BLACK);
         // if (usart_flag_get(USART0,USART_FLAG_RBNE)){ // USART0 RX?
         //   LCD_ShowChar(10,40,usart_data_receive(USART0), TRANSPARENT, GREEN);
         // }
@@ -72,10 +72,13 @@ int main(void) {
             usart_data_transmit(USART0, txbuffer[platsSkickaAtm]); // USRAT0 TX!
             platsSkickaAtm++;
         }
-        
-
-        //while(txcount < tx_size);
-        LCD_ShowChar(50,30,'G',TRANSPARENT, BLUE);
+    
+        LCD_ShowChar(10,30,'I',TRANSPARENT, BLUE);
+        LCD_ShowChar(20,30,'N',TRANSPARENT, BLUE);
+        LCD_ShowChar(30,30,'I',TRANSPARENT, BLUE);
+        LCD_ShowChar(40,30,'T',TRANSPARENT, BLUE);
+        LCD_ShowChar(55,30,'O',TRANSPARENT, BLUE);
+        LCD_ShowChar(65,30,'K',TRANSPARENT, BLUE);
         LCD_Wait_On_Queue();
         //while(RESET == usart_flag_get(USART0, USART_FLAG_TC));
 
@@ -89,8 +92,9 @@ int main(void) {
     
             while(platsTaEmotAtm < platsTaEmot){
                 if(usart_flag_get(USART0,USART_FLAG_RBNE)) {
-                LCD_ShowChar(60+s,40,txbuffer[platsTaEmotAtm],TRANSPARENT, RED);
-                delay_1ms(200);
+                    LCD_ShowChar(60+s,40,txbuffer[platsTaEmotAtm],TRANSPARENT, RED);
+                    delay_1ms(200);
+                    LCD_Wait_On_Queue();
                 }
                 platsTaEmotAtm++;
                 s=s+10;
