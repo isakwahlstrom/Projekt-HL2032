@@ -19,13 +19,17 @@
 #define ARRAYNUM(arr_nanme)      (uint32_t)(sizeof(arr_nanme) / sizeof(*(arr_nanme)))
 #define TRANSMIT_SIZE            (ARRAYNUM(txbuffer) - 1)
 
-uint8_t txbuffer[] = "\n\rUSART interrupt test\n\r";
+uint8_t txbuffer[] = "Janne";
 uint8_t rxbuffer[32];
 uint8_t tx_size = TRANSMIT_SIZE;
 uint8_t rx_size = 32;
 __IO uint8_t txcount = 0; 
 __IO uint16_t rxcount = 0; 
-
+int s=40;
+int platsSkicka = TRANSMIT_SIZE;
+int platsSkickaAtm = 0;
+int platsTaEmot = TRANSMIT_SIZE;
+int platsTaEmotAtm = 0;
 /*!
     \brief      main function
     \param[in]  none
@@ -59,40 +63,39 @@ int main(void) {
     LCD_Wait_On_Queue();  
 
     while(1) {
+        LCD_Clear(BLACK);
+        // if (usart_flag_get(USART0,USART_FLAG_RBNE)){ // USART0 RX?
+        //   LCD_ShowChar(10,40,usart_data_receive(USART0), TRANSPARENT, GREEN);
+        // }
+
+        while(platsSkickaAtm < platsSkicka) {
+            usart_data_transmit(USART0, txbuffer[platsSkickaAtm]); // USRAT0 TX!
+            platsSkickaAtm++;
+        }
+        
 
         //while(txcount < tx_size);
-        LCD_ShowChar(80,40,'G',TRANSPARENT, BLUE);
+        LCD_ShowChar(50,30,'G',TRANSPARENT, BLUE);
         LCD_Wait_On_Queue();
-        while(RESET == usart_flag_get(USART0, USART_FLAG_TC));
+        //while(RESET == usart_flag_get(USART0, USART_FLAG_TC));
 
         usart_interrupt_enable(USART0, USART_INT_RBNE);
 
         /* wait until USART receive the receiver_buffer */
-        while(rxcount < rx_size);
-        if(rxcount == rx_size) {
-            LCD_Fill(20, 20, 40, 40, RED);
-            LCD_ShowChar(90,40,'B',TRANSPARENT, RED);
+        //while(rxcount < rx_size);
+        //if(rxcount == rx_size) {
+            // LCD_Fill(20, 20, 40, 40, RED);
+            // LCD_ShowChar(90,40,'B',TRANSPARENT, RED);
     
-            if(usart_flag_get(USART0,USART_FLAG_RBNE)) {
-                LCD_ShowChar(40,40,'B',TRANSPARENT, RED);
+            while(platsTaEmotAtm < platsTaEmot){
+                if(usart_flag_get(USART0,USART_FLAG_RBNE)) {
+                LCD_ShowChar(60+s,40,txbuffer[platsTaEmotAtm],TRANSPARENT, RED);
+                delay_1ms(200);
+                }
+                platsTaEmotAtm++;
+                s=s+10;
             }
-        }
+            
+        //}
     };
 }
-
-// /*!
-//     \file  main.c
-//     \brief USART transmit and receive interrupt
-
-//     \version 2019-6-5, V1.0.0, firmware for GD32VF103
-// */
-
-// #include "gd32vf103.h"
-// #include <stdio.h>
-// #include "gd32vf103v_eval.h"
-
-// #define ARRAYNUM(arr_nanme)      (uint32_t)(sizeof(arr_nanme) / sizeof(*(arr_nanme)))
-// #define TRANSMIT_SIZE            (ARRAYNUM(txbuffer) - 1)
-
-
-
