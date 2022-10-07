@@ -104,16 +104,22 @@ int main(void) {
         usart_interrupt_enable(USART0, USART_INT_RBNE);
         
         /* Send txbuffer and recive it to save in rxbuffer */
+        for (int i = 0; i < rx_size; i++){
+            LCD_ShowChar(x+=10,40,rxbuffer[i],TRANSPARENT,GREEN);
+            LCD_Wait_On_Queue();
+        }
+        x=0;
         while((txcount < tx_size) && (rxcount < rx_size)) {
             if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_TBE)){ 
                 usart_data_transmit(USART0, txbuffer[txcount++]);
-                LCD_ShowNum(10,20,txcount,6,BLUE);
-                delay_1ms(250);
+                LCD_ShowNum(80,10,rxcount,6,BLUE);
+                LCD_Wait_On_Queue();
             }
+            delay_1ms(250);
             if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_RBNE)){ 
                 rxbuffer[rxcount++] = usart_data_receive(USART0);
-                LCD_ShowNum(20,20,rxcount,6,YELLOW);
-                delay_1ms(250);
+                LCD_ShowNum(100,10,rxcount,6,YELLOW);
+                LCD_Wait_On_Queue();
             }
         }
 
