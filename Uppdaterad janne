@@ -46,9 +46,14 @@ int main(void) {
     uint8_t * buffer = (uint8_t*)&fly;
     float rx=99;
     struct Package package2;
-    package2.aX = 2;
-    uint8_t * rxbuffer = (uint8_t*)&package2.aX;
-    uint8_t * bufferstruct = (uint8_t*)&package.aX;
+    package2.aX = 7;
+    package2.aY = 8;
+    package2.aZ = 9;
+    package2.gX = 10;
+    package2.gY = 11;
+    package2.gZ = 12;
+    uint8_t * rxbuffer = (uint8_t*)&package2;
+    uint8_t * bufferstruct = (uint8_t*)&package;
 	Lcd_SetType(LCD_NORMAL);
     Lcd_Init();
     LCD_Clear(BLACK);
@@ -116,8 +121,8 @@ int main(void) {
             LCD_ShowChar(x+=10,40,rxbuffer[i],TRANSPARENT,GREEN);
             LCD_Wait_On_Queue();
         }*/
-        x=0;
-        while((txcount < sizeof(fly) && rxcount<sizeof(fly))) {
+
+        while((txcount < sizeof(package) && rxcount<sizeof(package))) {
             if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_TBE)){ 
                 usart_data_transmit(USART0, bufferstruct[txcount++]);
                 LCD_ShowNum(50,10,txcount,2,BLUE);
@@ -144,9 +149,18 @@ int main(void) {
        //float num =  *((float*)buffer);
         /* Print out rxbuffer, the recived information to see that everything is there */
        // for (int i = 0; i < rx_size; i++){
-            LCD_ShowNum1(10,60,package2.aX,4,GREEN);
+            LCD_ShowNum1(10,60,package2.aX,3,GREEN);
             delay_1ms(250);
-       // }
+            LCD_ShowNum1(70,60,package2.aY,3,GREEN);
+            delay_1ms(250);
+            LCD_ShowNum1(120,60,package2.aZ,3,GREEN);
+            delay_1ms(250);
+            /*LCD_ShowNum1(x+=20,60,package2.gX,2,GREEN);
+            delay_1ms(250);
+            LCD_ShowNum1(x+=20,60,package2.gY,2,GREEN);
+            delay_1ms(250);
+            LCD_ShowNum1(x+=20,60,package2.gZ,2,GREEN);
+            delay_1ms(250);*/
         x = 0;
        // LCD_Clear(BLACK);
 
