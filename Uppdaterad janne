@@ -19,7 +19,7 @@
 /* Create variables for transmit & recive */
 // From Linus
 uint8_t txbuffer[] = "brassi";
-uint8_t rxbuffer[32];
+//uint8_t rxbuffer;
 uint8_t tx_size = TRANSMIT_SIZE;
 uint8_t rx_size = TRANSMIT_SIZE;
 __IO uint8_t txcount = 0; 
@@ -27,23 +27,31 @@ __IO uint16_t rxcount = 0;
 // Our own 
 
 /* Create a package struct to transmit (transmit and recive data from gyro/acc, vectors) */
-typedef struct {
-    char start;
-    int index;
-    mpu_vector_t Acc;
-    mpu_vector_t Gyro;
-} packet;
-
+struct Package {
+    float aX,aY,aZ,gX,gY,gZ;
+};
 
 /* Main function */
 
 int main(void) {
 	////////////////////////// Initialize LCD /////////////////////////////////////////
-    
-	Lcd_SetType(LCD_INVERTED);
+    struct Package package;
+    package.aX = 1;
+    package.aY = 2;
+    package.aZ = 3;
+    package.gX = 4;
+    package.gY = 5;
+    package.gZ = 6;
+    float fly = 93.57;
+    uint8_t * buffer = (uint8_t*)&fly;
+    float rx=99;
+    struct Package package2;
+    package2.aX = 2;
+    uint8_t * rxbuffer = (uint8_t*)&package2.aX;
+    uint8_t * bufferstruct = (uint8_t*)&package.aX;
+	Lcd_SetType(LCD_NORMAL);
     Lcd_Init();
     LCD_Clear(BLACK);
-
 	/* int to write T/R characters on LCD screen */
 	int x = 0;
 	int y = 0;
@@ -104,21 +112,21 @@ int main(void) {
         usart_interrupt_enable(USART0, USART_INT_RBNE);
         
         /* Send txbuffer and recive it to save in rxbuffer */
-        for (int i = 0; i < rx_size; i++){
+        /*for (int i = 0; i < rx_size; i++){
             LCD_ShowChar(x+=10,40,rxbuffer[i],TRANSPARENT,GREEN);
             LCD_Wait_On_Queue();
-        }
+        }*/
         x=0;
-        while((txcount < tx_size) && (rxcount < rx_size)) {
+        while((txcount < sizeof(fly) && rxcount<sizeof(fly))) {
             if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_TBE)){ 
-                usart_data_transmit(USART0, txbuffer[txcount++]);
-                LCD_ShowNum(80,10,rxcount,6,BLUE);
+                usart_data_transmit(USART0, bufferstruct[txcount++]);
+                LCD_ShowNum(50,10,txcount,2,BLUE);
                 LCD_Wait_On_Queue();
             }
             delay_1ms(250);
             if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_RBNE)){ 
                 rxbuffer[rxcount++] = usart_data_receive(USART0);
-                LCD_ShowNum(100,10,rxcount,6,YELLOW);
+                LCD_ShowNum(100,10,rxcount,2,YELLOW);
                 LCD_Wait_On_Queue();
             }
         }
@@ -133,12 +141,14 @@ int main(void) {
             LCD_ShowChar(20,10,'K',TRANSPARENT,RED);
             LCD_Wait_On_Queue();
         }
-
+       //float num =  *((float*)buffer);
         /* Print out rxbuffer, the recived information to see that everything is there */
-        for (int i = 0; i < rx_size; i++){
-            LCD_ShowChar(x+=10,60,rxbuffer[i],TRANSPARENT,GREEN);
+       // for (int i = 0; i < rx_size; i++){
+            LCD_ShowNum1(10,60,package2.aX,4,GREEN);
             delay_1ms(250);
-        }
+       // }
+        x = 0;
+       // LCD_Clear(BLACK);
 
             // LCD_ShowNum(x+=10,60,sizeof(rxbuffer),TRANSPARENT,GREEN); 
             // LCD_ShowChar(x+=10,60,rxbuffer[0],TRANSPARENT,GREEN);
