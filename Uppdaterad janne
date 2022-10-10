@@ -5,10 +5,8 @@
 #include "gd32v_mpu6500_if.h"
 #include <stdio.h>
 #include "gd32vf103v_eval.h"
-// #include "gd32vf103_it.h"
 
 /* Define global variables */
-
 #define GRAPH_HEIGHT 30
 #define EI 1
 #define DI 0
@@ -17,14 +15,12 @@
 #define TRANSMIT_SIZE            (ARRAYNUM(txbuffer) - 1)
 
 /* Create variables for transmit & recive */
-// From Linus
 uint8_t txbuffer[] = "brassi";
 //uint8_t rxbuffer;
 uint8_t tx_size = TRANSMIT_SIZE;
 uint8_t rx_size = TRANSMIT_SIZE;
 __IO uint8_t txcount = 0; 
 __IO uint16_t rxcount = 0;
-// Our own 
 
 /* Create a package struct to transmit (transmit and recive data from gyro/acc, vectors) */
 struct Package {
@@ -42,9 +38,7 @@ int main(void) {
     package.gX = 4;
     package.gY = 5;
     package.gZ = 6;
-    float fly = 93.57;
-    uint8_t * buffer = (uint8_t*)&fly;
-    float rx=99;
+    
     struct Package package2;
     package2.aX = 7;
     package2.aY = 8;
@@ -54,7 +48,7 @@ int main(void) {
     package2.gZ = 12;
     uint8_t * rxbuffer = (uint8_t*)&package2;
     uint8_t * bufferstruct = (uint8_t*)&package;
-	Lcd_SetType(LCD_NORMAL);
+	Lcd_SetType(LCD_INVERTED);
     Lcd_Init();
     LCD_Clear(BLACK);
 	/* int to write T/R characters on LCD screen */
@@ -66,8 +60,8 @@ int main(void) {
 	///////////////////////// Initialize Acc & Gyro ///////////////////////////////////
 
 	/* The related data structure for the IMU, contains a vector of x, y, z floats*/
-    mpu_vector_t vec, vec_temp;
-    mpu_vector_t vec2, vec2_temp;
+    mpu_vector_t Acc, vec_temp;
+    mpu_vector_t Gyro, vec2_temp;
     /* for lcd */
     uint16_t line_color;
 
@@ -85,8 +79,6 @@ int main(void) {
     mpu6500_getGyro(&vec2_temp);
 
 	//////////////////////////////////// Initialize Usart //////////////////////////////////////
-    
-	//u0init(EI);
 
 	/* USART interrupt configuration */
     eclic_global_interrupt_enable();
@@ -94,187 +86,87 @@ int main(void) {
     eclic_irq_enable(USART0_IRQn, 1, 0);
 		
     /* configure COM0 */
-    gd_eval_com_init(EVAL_COM0);                                // Startar hela USART systemet. (u0init(EI) behövs inte)
+    gd_eval_com_init(EVAL_COM0);                                // Startar hela USART systemet.
 	
     
-	/* enable USART RBNE interrupt */  
-	//usart_interrupt_enable(USART0, USART_INT_RBNE);
+	/* enable USART TBE & RBNE interrupt */  
+    usart_interrupt_enable(USART0, USART_INT_TBE);
+    usart_interrupt_enable(USART0, USART_INT_RBNE);
+
+    /////////////////////////////////// Initialize Math ///////////////////////////////////////// 
+
+    /*  */
+
+
+
 
 	/* Infinity while loop to always check gyro/acc & sedn/recive */
     
-	//while(1) {
-        // gd32vf103_it har alla dessa variabler med "prefixet extern". betyder nog att det vi skriver eller definerar dom som här kommer finnas sparat där
-        // Därmed behöver vi inte skicka eller ta emot i main utan bara omdefinera txbuffer till det vi vill skicka samt skriva ut rxbuffer när vi tagit emot.
-        // Flagga att vi skickar resp tar emot data. Med While looparna ??
-        // Vi provar det och om det fungerar provar vi ändra om txbuffer till en struct av nått slag ? Även ändras i gd32vf103 då ?
+	while(1) {
+        ///////////////////////////////////////////////// Accel & Gyro //////////////////////////////////////////////////////
+		
+        mpu6500_getGyroAccel(&Acc,&Gyro);
+        // Calls on getAccel and getGyro at the same time
+        package.aX = Acc.x;
+        package.aY = Acc.y;
+        package.aZ = Acc.z;
+        package.gX = Gyro.x;
+        package.gY = Gyro.y;
+        package.gZ = Gyro.z;
 
-        // Går det verkligen att först skicka och sedan ta emot ??? eller måste vi göra både och samtidigt när vi bara har en RISC-V ? Vart sparas datan där emellan ?   
+        /* Skala värdena!!! */
 
-        ////////////////////////////////// USART ////////////////////////////////////////////////////////////  
-        
-        /* enable USART TBE & RBNE interrupt */  
-        usart_interrupt_enable(USART0, USART_INT_TBE);
-        usart_interrupt_enable(USART0, USART_INT_RBNE);
-        
-        /* Send txbuffer and recive it to save in rxbuffer */
-        /*for (int i = 0; i < rx_size; i++){
-            LCD_ShowChar(x+=10,40,rxbuffer[i],TRANSPARENT,GREEN);
-            LCD_Wait_On_Queue();
-        }*/
+        /////////////////////////////////////////////////// USART ////////////////////////////////////////////////////////////  
 
         while((txcount < sizeof(package) && rxcount<sizeof(package))) {
             if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_TBE)){ 
                 usart_data_transmit(USART0, bufferstruct[txcount++]);
-                LCD_ShowNum(50,10,txcount,2,BLUE);
-                LCD_Wait_On_Queue();
+                //LCD_ShowNum(50,10,txcount,2,BLUE);
+                //LCD_Wait_On_Queue();
             }
-            delay_1ms(250);
+            //delay_1ms(50);
             if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_RBNE)){ 
                 rxbuffer[rxcount++] = usart_data_receive(USART0);
-                LCD_ShowNum(100,10,rxcount,2,YELLOW);
-                LCD_Wait_On_Queue();
+                //LCD_ShowNum(100,10,rxcount,2,YELLOW);
+                //LCD_Wait_On_Queue();
             }
         }
+        txcount =0;
+        rxcount=0;
 
-        /* Check that everything has been sent and everything has been recived */ 
-        if(rxcount == rx_size) {
-            LCD_ShowChar(10,10,'O',TRANSPARENT,RED);
-            LCD_Wait_On_Queue();
-        }
-        
-        if(rxcount == rx_size) {
-            LCD_ShowChar(20,10,'K',TRANSPARENT,RED);
-            LCD_Wait_On_Queue();
-        }
-       //float num =  *((float*)buffer);
+        //float num =  *((float*)buffer);
         /* Print out rxbuffer, the recived information to see that everything is there */
-       // for (int i = 0; i < rx_size; i++){
-            LCD_ShowNum1(10,60,package2.aX,3,GREEN);
-            delay_1ms(250);
-            LCD_ShowNum1(70,60,package2.aY,3,GREEN);
-            delay_1ms(250);
-            LCD_ShowNum1(120,60,package2.aZ,3,GREEN);
-            delay_1ms(250);
-            /*LCD_ShowNum1(x+=20,60,package2.gX,2,GREEN);
-            delay_1ms(250);
-            LCD_ShowNum1(x+=20,60,package2.gY,2,GREEN);
-            delay_1ms(250);
-            LCD_ShowNum1(x+=20,60,package2.gZ,2,GREEN);
-            delay_1ms(250);*/
-        x = 0;
-       // LCD_Clear(BLACK);
-
-            // LCD_ShowNum(x+=10,60,sizeof(rxbuffer),TRANSPARENT,GREEN); 
-            // LCD_ShowChar(x+=10,60,rxbuffer[0],TRANSPARENT,GREEN);
-            // delay_1ms(250);
-            // LCD_ShowChar(x+=10,60,rxbuffer[1],TRANSPARENT,GREEN);
-            // delay_1ms(250);
-            // LCD_ShowChar(x+=10,60,rxbuffer[2],TRANSPARENT,GREEN);
-            // delay_1ms(250);
-            // LCD_ShowChar(x+=10,60,rxbuffer[3],TRANSPARENT,GREEN);
-            // delay_1ms(250);
-            // LCD_ShowChar(x+=10,60,rxbuffer[4],TRANSPARENT,GREEN);
-            // delay_1ms(250);
-            // LCD_ShowChar(x+=10,60,rxbuffer[5],TRANSPARENT,GREEN);
-            // delay_1ms(250);
-        
-        /*while(txcount < tx_size);                                     //Skickar det som finns i txbuffer, genom att detta är en "flagga" som startar interrupten. (se kod i gd32vf103_it.c)
-        //while(RESET == usart_flag_get(USART0, USART_FLAG_TC));        //Transmission complete?
-        
-
-        while(rxcount < rx_size) {
-            if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_RBNE)){ 
-                rxbuffer[rxcount++] = usart_data_receive(USART0); 
-                LCD_ShowNum(60,60,rxcount,6,GREEN);
-                delay_1ms(250); 
-            }
-        }
-        
-        if(rxcount == rx_size) {
-                LCD_Clear(RED);
-                //LCD_ShowString(10,10,"USART SUCC",BLUE);
-        }
-        */
-        ///////////////////////////////////////////////// Accel //////////////////////////////////////////////////////
-		
-        //LCD_ShowChar(20,20,'X',TRANSPARENT, line_color);
-        //LCD_ShowChar(20,40,'Y',TRANSPARENT, line_color);
-        //LCD_ShowChar(20,60,'Z',TRANSPARENT, line_color);
-        //mpu6500_getGyroAccel(&vec2,&vec);
-        // Calls on getAccel and getGyro at the same time
-
-        /* Get accelleration data (Note: Blocking read) puts a force vector with 1G = 4096 into x, y, z directions respectively */
-        mpu6500_getAccel(&vec);
-
-        /* Do some fancy math to make a nice display */
-
-        /* Green if pointing up, red if down */
-        line_color = (vec.z < 0) ? RED : GREEN;
-        /* Draw a unit circle (1G) */
-        //Draw_Circle(40, 80 / 2, 28, BLUE);
-        /* Erase last line */
-        //LCD_DrawLine(40, 80 / 2, (40) + (vec_temp.y) / (4096 / 28), (80 / 2) + (vec_temp.x / (4096 / 28)), BLACK);
-        /* Draw new line, scaled to the unit circle */
-        //LCD_DrawLine(40, 80 / 2, (40) + (vec.y) / (4096 / 28), (80 / 2) + (vec.x / (4096 / 28)), line_color);
-        /* Store the last vector in temporary so it can be erased */
-        
-        //LCD_ShowNum1(40,20,vec.x,6,line_color);
-        //LCD_ShowNum1(40,40,vec.y,6,line_color);
-        //LCD_ShowNum1(40,60,vec.z,6,line_color);
-
-        vec_temp = vec;
-
-        //printf("%f", vec.x);
-
-        // LCD_DrawLine(40, 80 / 2, (40) + (vec_temp.y) / (4096 / 28), (80 / 2) + (vec_temp.x / (4096 / 28)), BLACK);
-        // "Upp" --> upp, "ner" --> Ner, Vänster --> vänster, Höger --> höger
-        // Positivt y = lutar mot sladden           |  Negativt y = lutar bort från sladden          (Skickar y värdet som x värde in till drawLine)
-        // Positivt x = lutar bort från knappsatsen |  Negativt x = lutar mot knappsatsen            (Skickar x värdet som y värde in till drawLine)
-
-        // Längden på linjen beror på 
-
-        // När vi ändrar färg beroende på z. line_color = (vec2.z < 0) ? RED : GREEN; LCD_NORMAL
-        // Skiftar mellan rött o grönt beroende på om den är rättvänd eller upp och ner.
-        // Rött = negativt = upp och ner | Grönt = positivt = rättvänd
-        
-        
-        /* Wait for LCD to finish drawing */
+        LCD_ShowNum1(10,10,package2.aX,6,GREEN);
+        LCD_Wait_On_Queue();
+        LCD_ShowNum1(90,10,package2.gX,6,GREEN);
+        LCD_Wait_On_Queue();
+        LCD_ShowNum1(10,30,package2.aY,6,GREEN);
+        LCD_Wait_On_Queue();
+        LCD_ShowNum1(90,30,package2.gY,6,GREEN);
+        LCD_Wait_On_Queue();
+        LCD_ShowNum1(10,50,package2.aZ,6,GREEN);
+        LCD_Wait_On_Queue();
+        LCD_ShowNum1(90,50,package2.gZ,6,GREEN);
         LCD_Wait_On_Queue();
         
-        ///////////////////////////////////////////////// Gyro /////////////////////////////////////////////////////
+        delay_1ms(1000);
+        LCD_Clear(BLACK);
 
-        /* Get Gyro data (Note: Blocking read???) puts a angular vector with degrees / sec into x, y, z directions respectively */
-        //mpu6500_getGyro(&vec2);
-
-        /* Do some fancy math to make a nice display */
-
-        /* Green if pointing up, red if down */
-        //line_color = (vec2.z < 0) ? RED : GREEN;
-        /* Draw a unit circle (1G)  adapt to Gyro? */
-        //Draw_Circle(120, 80 / 2, 28, BLUE);
-        /* Erase last line */
-        //LCD_DrawLine(120, 80 / 2, (120) + (-1*(vec2_temp.x)) / (2000 / 28), (80 / 2) + (vec2_temp.y / (2000 / 28)), BLACK);
-        /* Draw new line, scaled to the unit circle */
-        //LCD_DrawLine(120, 80 / 2, (120) + (-1*(vec2.x)) / (2000 / 28), (80 / 2) + (vec2.y / (2000 / 28)), line_color);
-        /* Store the last vector so it can be erased */
-        //vec2_temp = vec2;
-
-        // LCD_DrawLine(120, 80 / 2, (120) + (vec2.x) / (2000 / 28), (80 / 2) + (vec2.y / (2000 / 28)), line_color);
-        // "Upp" --> upp, "ner" --> Ner, Vänster --> höger, Höger --> vänster
-        // Positivt x = lutar bort från sladden |  Negativt x = lutar mot sladden               "Rotation runt x axeln"
-        // Positivt y = lutar mot knappsatsen   |  Negativt y = lutar bort från knappsatsen     "Rotation runt z axeln"
-
-        // Längden på linjen beror på hastigheten som vinkeln ändras med.
-        // Hur kan det anpassas eller tydas på ett bra sätt?
-
-        // När vi ändrar färg beroende på z. line_color = (vec2.z < 0) ? RED : GREEN; LCD_NORMAL
-        // Skiftar mellan rött o grönt efter rotationen ? Sladd mot knappsats = rött, tvärtom = grönt.
-        // Grönt = moturs = positivt z | Rött = medurs = negativt z
-        // "Rotation runt y axeln"
-
-        
-        /* Wait for LCD to finish drawing */
-        //LCD_Wait_On_Queue();
+        /////////////////////////////////////////////////// Math //////////////////////////////////////////////////////////// 
+        if(package2.aX < 0){
+            if(package2.aY < 0){
+                LCD_Clear(GREEN);
+            } else if(package2.aY > 0){
+                LCD_Clear(GREEN);
+            }
+        } else if(package2.aX > 0){
+            if(package2.aY < 0){
+                LCD_Clear(GREEN);
+            } else if(package2.aY > 0){
+                LCD_Clear(GREEN);
+            }
+        }
+        /* Skriv kod för att navigera i ett 2D rutnät */
 		
-    //};
+    };
 }
