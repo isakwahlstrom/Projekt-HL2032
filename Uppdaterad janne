@@ -36,7 +36,7 @@ int main(void) {
 	Lcd_SetType(LCD_INVERTED);
     Lcd_Init();
     LCD_Clear(1);
-    //LCD_DrawPoint(1,1,1);
+    LCD_DrawPoint(1,1,1);
     delay_1ms(100);
      
 	/* int to write T/R characters on LCD screen */
