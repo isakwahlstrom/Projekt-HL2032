@@ -33,28 +33,6 @@ struct Package {
 
 int main(void) {
 	////////////////////////// Initialize LCD /////////////////////////////////////////
-    struct Package package;
-    package.aX = 0;
-    package.aY = 0;
-    package.aZ = 3;
-    package.gX = 4;
-    package.gY = 5;
-    package.gZ = 6;
-    
-    struct Package package2;
-    package2.aX = 7;
-    package2.aY = 8;
-    package2.aZ = 9;
-    package2.gX = 10;
-    package2.gY = 11;
-    package2.gZ = 12;
-
-    float StartX, StartY;
-    float LatestX, LatestY; 
-    
-    uint8_t * rxbuffer = (uint8_t*)&package2;
-    uint8_t * bufferstruct = (uint8_t*)&package;
-
 	Lcd_SetType(LCD_INVERTED);
     Lcd_Init();
     LCD_Clear(1);
@@ -102,6 +80,29 @@ int main(void) {
 	/* enable USART TBE & RBNE interrupt */  
     usart_interrupt_enable(USART0, USART_INT_TBE);
     usart_interrupt_enable(USART0, USART_INT_RBNE);
+
+    struct Package package;
+    package.aX = 0;
+    package.aY = 0;
+    package.aZ = 3;
+    package.gX = 4;
+    package.gY = 5;
+    package.gZ = 6;
+    
+    struct Package package2;
+    package2.aX = 7;
+    package2.aY = 8;
+    package2.aZ = 9;
+    package2.gX = 10;
+    package2.gY = 11;
+    package2.gZ = 12;
+
+    float StartX, StartY;
+    float LatestX, LatestY; 
+    
+    uint8_t * rxbuffer = (uint8_t*)&package2;
+    uint8_t * bufferstruct = (uint8_t*)&package;
+
 
     /////////////////////////////////// Initialize Math ///////////////////////////////////////// 
 
