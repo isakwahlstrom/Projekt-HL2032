@@ -87,9 +87,9 @@ void LCD_Writ_Bus(u8 dat)
 */
 void LCD_WR_DATA8(u8 dat)
 {
-	//OLED_DC_Set();  // Write data
-	//LCD_Writ_Bus(dat);
-    LCD_Write_Bus(((int)dat)+(1<<8));
+	OLED_DC_Set();  // Write data
+	LCD_Writ_Bus(dat);
+    //LCD_Write_Bus(((int)dat)+(1<<8));
 }
 
 
@@ -100,11 +100,11 @@ void LCD_WR_DATA8(u8 dat)
 */
 void LCD_WR_DATA(u16 dat)
 {
-	//OLED_DC_Set();  // Write data
-	//LCD_Writ_Bus(dat>>8);
-	//LCD_Writ_Bus(dat);
-    LCD_Write_Bus(((int)dat>>8)+(1<<8));
-    LCD_Write_Bus(((int)dat&0xFF)+(1<<8));
+	OLED_DC_Set();  // Write data
+	LCD_Writ_Bus(dat>>8);
+	LCD_Writ_Bus(dat);
+    //LCD_Write_Bus(((int)dat>>8)+(1<<8));
+    //LCD_Write_Bus(((int)dat&0xFF)+(1<<8));
 }
 
 
@@ -115,9 +115,9 @@ void LCD_WR_DATA(u16 dat)
 */
 void LCD_WR_REG(u8 dat)
 {
-	//OLED_DC_Clr();  // Write command
-	//LCD_Writ_Bus(dat);
-    LCD_Write_Bus((int)dat);
+	OLED_DC_Clr();  // Write command
+	LCD_Writ_Bus(dat);
+    //LCD_Write_Bus((int)dat);
 }
 
 
@@ -202,17 +202,17 @@ void Lcd_Init(void)
 	spi_config();
 
 	gpio_bit_reset(GPIOC, GPIO_PIN_13 | GPIO_PIN_15);
-	LCD_Wait_On_Queue();
+	//LCD_Wait_On_Queue();
 	lcd_delay_1ms(100);
 	
 
 	LCD_WR_REG(0x01); 	//SW reset
-	LCD_Wait_On_Queue();
+	//LCD_Wait_On_Queue();
 	lcd_delay_1ms(120);
 	
 
 	LCD_WR_REG(0x11); 	//SLPOUT
-	LCD_Wait_On_Queue();
+	//LCD_Wait_On_Queue();
 	lcd_delay_1ms(100);
 
 	if(lcd_conf.inverted) LCD_WR_REG(0x22); 
