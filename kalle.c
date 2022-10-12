@@ -29,9 +29,11 @@ struct Package {
     float aX,aY,aZ,gX,gY,gZ;
 };
 
+/* Create array for transmiting data to SD-Card & Clock to see when we should send it */
 float data[128] = {11.11,22.22,11.11,33.33,11.11,44.44,11.11,55.55,11.11,66.66};
 int clock = 0;
 
+////////////////////////// Define functions /////////////////////////////////////////
 void HepticFeedback(float x, float y);
 
 void SendToSD(float data[]);
@@ -168,6 +170,8 @@ int main(void) {
 	LCD_Clear(1);
     };
 }
+
+////////////////////////// Write functions /////////////////////////////////////////
 
 void HepticFeedback(float x, float y){
     int value = 0;
