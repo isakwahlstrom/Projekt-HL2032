@@ -82,7 +82,7 @@ int main(void) {
         PosX += Ax*Gx;
         PosY += Ay*Gy;
         
-        Skriv kod för att navigera i ett 2D rutnät */
+        /* Skriv kod för att navigera i ett 2D rutnät */
 
         /////////////////////////////////////////////////// Haptic-Feedback //////////////////////////////////////////////////////////// 
 
