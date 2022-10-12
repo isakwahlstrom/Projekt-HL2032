@@ -27,9 +27,9 @@ void HapticFeedback(float x, float y);
 int main(void) {
     Initialize_Project();
 
-	///////////////////////// Variables ///////////////////////////////////
+    ///////////////////////// Variables ///////////////////////////////////
 
-	/* The related data structure for the IMU, contains a vector of x, y, z floats*/
+    /* The related data structure for the IMU, contains a vector of x, y, z floats*/
     mpu_vector_t Acc, Gyro;
 	
     struct Package package;
@@ -61,7 +61,7 @@ int main(void) {
 
 void Initialize_Project(){
     ////////////////////////////////////// Initialize LCD ///////////////////////////////////////////
-	Lcd_SetType(LCD_INVERTED);
+    Lcd_SetType(LCD_INVERTED);
     Lcd_Init();
     LCD_Clear(1);
     LCD_DrawPoint(1,1,1);
