@@ -3,9 +3,10 @@
 #include "lcd.h"
 #include "delay.h"
 #include "gd32v_mpu6500_if.h"
-#include <stdio.h>
 #include "gd32vf103v_eval.h"
-// #include "gd32vf103_it.h"
+#include "stdio.h"
+#include "string.h"
+#include "gd32v_tf_card_if.h"
 
 /* Define global variables */
 #define GRAPH_HEIGHT 30
@@ -17,7 +18,7 @@
 
 /* Create variables for transmit & recive */
 uint8_t txbuffer[] = "brassi";
-uint8_t rxbuffer[32];
+//uint8_t rxbuffer;
 uint8_t tx_size = TRANSMIT_SIZE;
 uint8_t rx_size = TRANSMIT_SIZE;
 __IO uint8_t txcount = 0; 
@@ -25,22 +26,26 @@ __IO uint16_t rxcount = 0;
 
 /* Create a package struct to transmit (transmit and recive data from gyro/acc, vectors) */
 struct Package {
-    float aX, aY, aZ, gX, gY, gZ;
-} Package;
+    float aX,aY,aZ,gX,gY,gZ;
+};
 
-uint8_t buffer[sizeof(Package) + 1];
+float data[128] = {11.11,22.22,11.11,33.33,11.11,44.44,11.11,55.55,11.11,66.66};
+int clock = 0;
 
-// Antingen skcikar vi denna buffert lite i taget, med pointers från och till uint8_t alternativt använder union till en "vanlig array"
+void HepticFeedback(float x, float y);
+
+void SendToSD(float data[]);
 
 /* Main function */
 
 int main(void) {
 	////////////////////////// Initialize LCD /////////////////////////////////////////
-    
 	Lcd_SetType(LCD_INVERTED);
     Lcd_Init();
-    LCD_Clear(BLACK);
-
+    LCD_Clear(1);
+    LCD_DrawPoint(1,1,1);
+    delay_1ms(100);
+     
 	/* int to write T/R characters on LCD screen */
 	int x = 0;
 	int y = 0;
@@ -50,10 +55,10 @@ int main(void) {
 	///////////////////////// Initialize Acc & Gyro ///////////////////////////////////
 
 	/* The related data structure for the IMU, contains a vector of x, y, z floats*/
-    mpu_vector_t Acc, vec_temp;
-    mpu_vector_t Gyro, vec2_temp;
-    /* for lcd */
-    uint16_t line_color;
+    float ba, bo, sa, so;
+    ba = 22; bo = 22; sa = 33; so = 33;
+    mpu_vector_t Acc, Acc_temp;
+    mpu_vector_t Gyro, Gyro_temp;
 
 	/* Initialize pins for I2C */
     rcu_periph_clock_enable(RCU_GPIOB);
@@ -63,10 +68,6 @@ int main(void) {
        ICM-20600 is mostly register compatible with MPU6500, if MPU6500 is used only thing that needs
        to change is MPU6500_WHO_AM_I_ID from 0x11 to 0x70. */
     mpu6500_install(I2C0);
-
-	/* Creates temporary vectors to erase previously drwan lines */
-    mpu6500_getAccel(&vec_temp);
-    mpu6500_getGyro(&vec2_temp);
 
 	//////////////////////////////////// Initialize Usart //////////////////////////////////////
 
@@ -78,68 +79,136 @@ int main(void) {
     /* configure COM0 */
     gd_eval_com_init(EVAL_COM0);                                // Startar hela USART systemet.
 	
+    
+	/* enable USART TBE & RBNE interrupt */  
+    usart_interrupt_enable(USART0, USART_INT_TBE);
+    usart_interrupt_enable(USART0, USART_INT_RBNE);
+
+    struct Package package;
+    
+    struct Package package2;
+    
+    uint8_t * rxbuffer = (uint8_t*)&package2;
+    uint8_t * bufferstruct = (uint8_t*)&package;
+
+
+    /////////////////////////////////// Initialize Math ///////////////////////////////////////// 
+    float PosX, PosY;
+    //float StartX, StartY;
+    //float LatestX, LatestY;
+    /*  */
+
 
 	/* Infinity while loop to always check gyro/acc & sedn/recive */
     
-	//while(1) {
-        
-        ///////////////////////////////////////////////// Acc & Gyro //////////////////////////////////////////////////////////
+	while(1) {
+        ///////////////////////////////////////////////// Accel & Gyro //////////////////////////////////////////////////////
 		
-        // Calls on getAccel and getGyro at the same time
         mpu6500_getGyroAccel(&Acc,&Gyro);
+        // Calls on getAccel and getGyro at the same time
+        package.aX = Acc.x;
+        package.aY = Acc.y;
+        package.aZ = Acc.z;
+        package.gX = Gyro.x;
+        package.gY = Gyro.y;
+        package.gZ = Gyro.z;
 
-        ////////////////////////////////////////////// Pack package //////////////////////////////////////////////////////////// 
+        /* Skala värdena!!! */
 
-        Package.aX = Acc.x;
-        Package.aY = Acc.y;
-        Package.aZ = Acc.z;
-        Package.gX = Gyro.x;
-        Package.gY = Gyro.y;
-        Package.gZ = Gyro.z;
+        /////////////////////////////////////////////////// USART ////////////////////////////////////////////////////////////  
 
-
-        /////////////////////////////////////////////////// USART ////////////////////////////////////////////////////////////////  
-        
-        /* enable USART TBE & RBNE interrupt */  
-        usart_interrupt_enable(USART0, USART_INT_TBE);
-        usart_interrupt_enable(USART0, USART_INT_RBNE);
-        
-        /* Send txbuffer and recive it to save in rxbuffer */
-        for (int i = 0; i < rx_size; i++){
-            LCD_ShowChar(x+=10,40,rxbuffer[i],TRANSPARENT,GREEN);
-            LCD_Wait_On_Queue();
-        }
-        x=0;
-        while((txcount < tx_size) && (rxcount < rx_size)) {
+        while((txcount < sizeof(package) && rxcount<sizeof(package))) {
             if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_TBE)){ 
-                usart_data_transmit(USART0, txbuffer[txcount++]);
-                LCD_ShowNum(80,10,txcount,2,BLUE);
-                LCD_Wait_On_Queue();
+                usart_data_transmit(USART0, bufferstruct[txcount++]);
             }
-            delay_1ms(250);
+            //delay_1ms(50);
             if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_RBNE)){ 
                 rxbuffer[rxcount++] = usart_data_receive(USART0);
-                LCD_ShowNum(100,10,rxcount,2,YELLOW);
-                LCD_Wait_On_Queue();
             }
         }
+        txcount =0;
+        rxcount=0;
 
-        /* Check that everything has been sent and everything has been recived */ 
-        if(rxcount == rx_size) {
-            LCD_ShowChar(10,10,'O',TRANSPARENT,RED);
-            LCD_Wait_On_Queue();
-        }
-        
-        if(rxcount == rx_size) {
-            LCD_ShowChar(20,10,'K',TRANSPARENT,RED);
-            LCD_Wait_On_Queue();
-        }
+        //float num =  *((float*)buffer);
 
-        /* Print out rxbuffer, the recived information to see that everything is there */
-        for (int i = 0; i < rx_size; i++){
-            LCD_ShowChar(x+=10,60,rxbuffer[i],TRANSPARENT,GREEN);
-            delay_1ms(250);
+        /////////////////////////////////////////////////// Math //////////////////////////////////////////////////////////// 
+        PosX = ba * bo;
+        PosY = sa * so;
+        /*
+        StartX = 0; 
+        StartY = 0;
+        LatestX = package2.aX - StartX;
+        LatestY = package2.aY - StartY;
+        if(LatestX < 0){
+            if(LatestY < 0){
+                LCD_Clear(GREEN);
+            } else if(LatestY > 0){
+                LCD_Clear(RED);
+            }
+        } else if(LatestX > 0){
+            if(LatestY < 0){
+                LCD_Clear(YELLOW);
+            } else if(LatestY > 0){
+                LCD_Clear(BLUE);
+            }
         }
-		
-    //};
+        Skriv kod för att navigera i ett 2D rutnät */
+
+     /////////////////////////////////////////////////// SD-Card //////////////////////////////////////////////////////////// 
+    data[clock] = PosX * clock;
+    data[clock + 1] = PosY * clock;   
+    if (clock == 10){
+        SendToSD(data);
+        clock = 0;
+        LCD_ShowChar(50,50,'X',TRANSPARENT,GREEN);
+    }
+    
+    delay_1ms(1000);
+    clock += 2;
+	LCD_Clear(1);
+    };
+}
+
+void HepticFeedback(float x, float y){
+    int value = 0;
+    int max = 100;
+    if ((x > max) || (y > max)){
+        value = 1;
+    } else {
+        value = 0;
+    }
+    //T1setPWMotorB(value);
+}
+
+void SendToSD(float data[]){
+    FATFS fs;
+    volatile FRESULT fr;
+    FIL file;
+
+    UINT bw = 0;
+
+    char information[128];
+    int integerX, integerY, decimalX, decimalY;
+    
+    set_fattime(2022,10,12,0,0,0);
+    delay_1ms(100);
+    
+    strcpy(information,"");
+    for (int i = 0; i < 10; i+=2){
+        sprintf(&information[strlen(information)], "%02f / %02f | ", data[i], data[i+1]);
+    }
+    strcat(information,"");
+    
+    f_mount(&fs,"",1);
+    f_sync(&file);
+
+    fr = f_open(&file, "TEST.TXT", FA_WRITE | FA_OPEN_APPEND);
+    fr = f_write(&file, information, strlen(information), &bw);
+    delay_1ms(400);
+
+    f_sync(&file);
+
+    f_close(&file);
+    delay_1ms(100);
+
 }
