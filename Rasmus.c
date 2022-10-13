@@ -1,84 +1,327 @@
+/* Including packages and files */ 
 #include "gd32vf103.h"
 #include "lcd.h"
 #include "delay.h"
 #include "gd32v_mpu6500_if.h"
-#include <stdio.h>
 #include "gd32vf103v_eval.h"
+#include "stdio.h"
+#include "string.h"
+#include "gd32v_tf_card_if.h"
+#include "pwm.h"
 
+/* Define global variables */
 #define GRAPH_HEIGHT 30
 #define EI 1
 #define DI 0
 
-#define ARRAYNUM(arr_nanme)      (uint32_t)(sizeof(arr_nanme) / sizeof(*(arr_nanme)))
-#define TRANSMIT_SIZE            (ARRAYNUM(txbuffer) - 1)
+#define PWMC1_PORT     GPIOA
+#define PWMC1_PIN      GPIO_PIN_1
+#define PWM_CHANNEL   
 
-uint8_t txbuffer[] = "Brassi";
-uint8_t rxbuffer[32];
-uint8_t tx_size = TRANSMIT_SIZE;
-uint8_t rx_size = 32;
-__IO uint8_t txcount = 0; 
-__IO uint16_t rxcount = 0; 
-int s=40;
-int platsSkicka = TRANSMIT_SIZE;
-int platsSkickaAtm = 0;
-int platsTaEmot = TRANSMIT_SIZE;
-int platsTaEmotAtm = 0;
+/* Create a package struct to transmit (transmit and recive data from gyro/acc, vectors) */
+struct Package {
+    float aX,aY,aZ,gX,gY,gZ;
+};
+
+////////////////////////// Define functions /////////////////////////////////////////
+
+void Initialize_Project(void);
+void Recive_IMU_Data(struct Package *package);
+void Send_IMU_Data(struct Package package);
+
+void HapticFeedback(int x, int y);
+
+void SendToSD(float data[]);
+
+void init_PWM_example();
+
+/* Main function */
 
 int main(void) {
+    Initialize_Project();
+
+	///////////////////////// Acc & Gyro variables ///////////////////////////////////
+
+	/* The related data structure for the IMU, contains a vector of x, y, z floats*/
+    //float ba, bo, sa, so;
+    //ba = 22; bo = 22; sa = 33; so = 33;
+    mpu_vector_t Acc, Gyro;
+
+	//////////////////////////////////// Usart variables //////////////////////////////////////
+	
+    struct Package package;
+    struct Package package2;
+
+    /////////////////////////////////// Math variables ///////////////////////////////////////// 
+    float Ax, Ay, Gx, Gy;
+    float PosX, PosY;
+    //float StartX, StartY;
+    //float LatestX, LatestY;
+
+    /////////////////////////////// Haptic-Feedback variables ///////////////////////////////////// 
+
+    /* Hardware PWM on the GD32Vf103 is generted with the help of a timer. It basically compares a number in a register against the current timer count
+       and sets the state of the pin low or high based on if the channels value is higher or lower than the current count. */
+
+    /* This example displays a pulsing light in a triangle wave pattern */
+
+    int32_t duty = 0;
+    int32_t diff = 4096/128;
+    int x=0;
+    int y=0;
+
+    /* Initialize gpio for alternate function */
+    rcu_periph_clock_enable(RCU_GPIOA);
+    rcu_periph_clock_enable(RCU_AF);
+    gpio_init(GPIOA, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_1);
+
+    /* First we need to set up the timer */
+    T1powerUpInitPWM(0x3);                  //Starts A0 and A1.
+
+    /////////////////////////////////// SD-Card variables ///////////////////////////////////////// 
     
-    /* Initialize */
-    Lcd_SetType(LCD_INVERTED);
-    Lcd_Init();
-    LCD_Clear(BLACK);
-    LCD_ShowChar(10,10,'A',TRANSPARENT, RED);
-    delay_1ms(50);
-    eclic_global_interrupt_enable();                /* USART interrupt configuration */
-    LCD_ShowChar(20,10,'B',TRANSPARENT, BLUE);
-    delay_1ms(50);
-    eclic_priority_group_set(ECLIC_PRIGROUP_LEVEL3_PRIO1);
-    LCD_ShowChar(30,10,'C',TRANSPARENT, YELLOW);
-    delay_1ms(50);
-    eclic_irq_enable(USART0_IRQn, 1, 0);
-    LCD_ShowChar(40,10,'D',TRANSPARENT, RED);
-    LCD_Wait_On_Queue();
-    delay_1ms(50);
-    gd_eval_com_init(EVAL_COM0);                    /* configure COM0 */
-    LCD_ShowChar(50,10,'E',TRANSPARENT, BLUE);
-    LCD_Wait_On_Queue();
-    delay_1ms(50);
-    usart_interrupt_enable(USART0, USART_INT_TBE);  /* enable USART TBE interrupt */
-    LCD_ShowChar(60,10,'F',TRANSPARENT, YELLOW);
-    LCD_Wait_On_Queue();  
+    /* Create array for transmiting data to SD-Card & Clock to see when we should send it */
+    float data[128] = {11.11,22.22,11.11,33.33,11.11,44.44,11.11,55.55,11.11,66.66};
+    int clock = 0;
+	
+    
+    
+    /* Infinity while loop to always check gyro/acc & sedn/recive */
+	while(1) {
+        ///////////////////////////////////////////////// Accel & Gyro //////////////////////////////////////////////////////
+		
+        mpu6500_getGyroAccel(&Acc,&Gyro);
+        // Calls on getAccel and getGyro at the same time
+        package.aX = Acc.x/4096;
+        package.aY = Acc.y/4096;
+        package.aZ = Acc.z/4096;
+        package.gX = Gyro.x/16.4;
+        package.gY = Gyro.y/16.4;
+        package.gZ = Gyro.z/16.4;
 
-    while(1) {
-        // LCD_Clear(BLACK);
+        /////////////////////////////////////////////////// USART ////////////////////////////////////////////////////////////  
+        //Recive_IMU_Data(&package2);      
+                                                    // Finns inget att ta emot, så den snear.
+        //float num =  *((float*)buffer);
+        
+        /////////////////////////////////////////////////// Math //////////////////////////////////////////////////////////// 
+        // 2D Matrix: https://beginnersbook.com/2014/01/2d-arrays-in-c-example/
+        // 3D Matrix: https://owlcation.com/stem/How-to-work-with-Multidimensional-Array-in-C-Programming
+        Ax = package2.aX - package.aX;
+        Ay = package2.aY - package.aY;
+        Gx = package2.gX - package.gX;
+        Gy = package2.gY - package.gY;
 
-        while(platsSkickaAtm < platsSkicka) {                      // Skicka varje tecken i en förbestämd array
-            usart_data_transmit(USART0, txbuffer[platsSkickaAtm]); // USRAT0 TX!
-            platsSkickaAtm++;
+        PosX += Ax*Gx;
+        PosY += Ay*Gy;
+        // PosX = ba * bo;
+        // PosY = sa * so;
+        
+        /* Skriv kod för att navigera i ett 2D rutnät */
+        // Acc:
+        // The vector R is the force vector that the accelerometer is measuring (it could be either the gravitation force or the inertial force from the examples above or a combination of both).
+        // R^2 = Rx^2 + Ry^2 + Rz^2
+
+        // https://robotics.stackexchange.com/questions/18446/how-to-transform-raw-accelerometer-data-into-the-earth-fixed-frame-to-determine
+        // https://www.i2cdevlib.com/forums/topic/4-understanding-raw-values-of-accelerometer-and-gyrometer/
+        // https://www.instructables.com/Accelerometer-Gyro-Tutorial/
+        // I 2D vill vi använda oss av Euler angle för att räkna ut en ungefärlig orientering från gyroskopet. Integrering av gyro-datan.
+        // När vi sedan går över till 3D vill vi använda Tait-Bryan angles.
+        // Vi vill använda Eigen biblioteket för att convertera accelerometer matriser ?
+
+
+        /////////////////////////////////////////////////// Haptic-Feedback //////////////////////////////////////////////////////////// 
+        /* Update pulse width*/
+        //timer_channel_output_pulse_value_config(TIMER4,TIMER_CH_1,(int)duty);
+        
+        /* Create triangle wave */
+        duty += diff; 
+
+        if(duty > 4096 || duty < 0) diff = -diff; //If the full duty cycle is reached start counting down, if below zero start counting up
+        if(duty < 0) duty = 0;                    //Make sure no negative values get written as the dutycycle
+
+        /* Wait a short moment */
+        delay_1ms(6);
+
+
+        x+=20;
+        y+=20;
+        HapticFeedback(x,y);
+        //T1setPWMch2(8000);
+
+        /////////////////////////////////////////////////// SD-Card //////////////////////////////////////////////////////////// 
+        data[clock] = PosX;
+        data[clock + 1] = PosY;   
+        if (clock == 10){
+            SendToSD(data);
+            clock = 0;
+            LCD_ShowChar(50,50,'X',TRANSPARENT,GREEN);
         }
     
-        LCD_ShowChar(10,30,'I',TRANSPARENT, BLUE);
-        LCD_ShowChar(20,30,'N',TRANSPARENT, BLUE);
-        LCD_ShowChar(30,30,'I',TRANSPARENT, BLUE);
-        LCD_ShowChar(40,30,'T',TRANSPARENT, BLUE);
-        LCD_ShowChar(55,30,'O',TRANSPARENT, BLUE);
-        LCD_ShowChar(65,30,'K',TRANSPARENT, BLUE);
-        LCD_Wait_On_Queue();
-        //while(RESET == usart_flag_get(USART0, USART_FLAG_TC));    // Transfer complete? Ska vi använda denna?
-
-        usart_interrupt_enable(USART0, USART_INT_RBNE);             // Gå över till "ta emot-läge"
-    
-            while(platsTaEmotAtm < platsTaEmot){
-                if(usart_flag_get(USART0,USART_FLAG_RBNE)) {        // Om det finns något i RX bufferten, visa upp varje tecken
-                    LCD_ShowChar(60+s,40,txbuffer[platsTaEmotAtm],TRANSPARENT, RED);        // i en array
-                    delay_1ms(200);
-                    LCD_Wait_On_Queue();
-                }
-                platsTaEmotAtm++;
-                s=s+8;
-            }
+        delay_1ms(1000);
+        clock += 2;
+	    LCD_Clear(1);
     };
 }
 
-            // Nästa mål: Koppla upp gyro/accel och transmitta det istället. Sen är vi nära..
+////////////////////////// Write functions /////////////////////////////////////////
+
+void Initialize_Project(){
+    ////////////////////////////////////// Initialize LCD ///////////////////////////////////////////
+	Lcd_SetType(LCD_INVERTED);
+    Lcd_Init();
+    LCD_Clear(1);
+    LCD_DrawPoint(1,1,1);
+    delay_1ms(100);
+
+	//////////////////////////////////// Initialize Acc & Gyro /////////////////////////////////////
+
+	/* Initialize pins for I2C */
+    rcu_periph_clock_enable(RCU_GPIOB);
+    rcu_periph_clock_enable(RCU_I2C0);
+    gpio_init(GPIOB, GPIO_MODE_AF_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_6 | GPIO_PIN_7);
+    /* Initialize the IMU (Notice that MPU6500 is referenced, this is due to the fact that ICM-20600
+       ICM-20600 is mostly register compatible with MPU6500, if MPU6500 is used only thing that needs
+       to change is MPU6500_WHO_AM_I_ID from 0x11 to 0x70. */
+    mpu6500_install(I2C0);
+
+	//////////////////////////////////// Initialize Usart ///////////////////////////////////////////
+
+	/* USART interrupt configuration */
+    eclic_global_interrupt_enable();
+    eclic_priority_group_set(ECLIC_PRIGROUP_LEVEL3_PRIO1);
+    eclic_irq_enable(USART0_IRQn, 1, 0);
+		
+    /* configure COM0 */
+    gd_eval_com_init(EVAL_COM0);                                // Startar hela USART systemet.
+
+    /////////////////////////////////// Initialize Math ///////////////////////////////////////////// 
+
+    /////////////////////////////// Initialize Haptic-Feedback ///////////////////////////////////// 
+
+    /////////////////////////////////// Initialize SD-Card ///////////////////////////////////////////// 
+
+}
+
+
+void Recive_IMU_Data(struct Package *package){
+    uint8_t rx_size = 32;
+    __IO uint16_t rxcount = 0;
+    uint8_t * rxbuffer = (uint8_t*)&package;
+    usart_interrupt_enable(USART0, USART_INT_RBNE);
+
+    while(rxcount<sizeof(package)) {
+            if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_RBNE)){ 
+                rxbuffer[rxcount++] = usart_data_receive(USART0);
+            }
+        }
+        rxcount=0;
+    
+}
+
+void Send_IMU_Data(struct Package package){
+    uint8_t tx_size = 32;
+    __IO uint8_t txcount = 0; 
+    uint8_t * txbuffer = (uint8_t*)&package;
+    usart_interrupt_enable(USART0, USART_INT_TBE);
+
+    while(txcount < sizeof(package)) {
+            if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_TBE)){ 
+                usart_data_transmit(USART0, txbuffer[txcount++]);
+            }
+        }
+        txcount =0;
+
+}
+
+
+void HapticFeedback(int x, int y){
+    int value = 0;
+    int max = 100;
+    if ((x > max) || (y > max)){
+        value = 1;
+    } else {
+        value = 0;
+    }
+    T1setPWMmotorB(value);
+}
+
+void SendToSD(float data[]){
+    FATFS fs;
+    volatile FRESULT fr;
+    FIL file;
+
+    UINT bw = 0;
+
+    char information[128];
+    int integerX, integerY, decimalX, decimalY;
+    
+    set_fattime(2022,10,12,0,0,0);
+    delay_1ms(100);
+    
+    strcpy(information,"");
+    for (int i = 0; i < 10; i+=2){
+        sprintf(&information[strlen(information)], "%02f / %02f | ", data[i], data[i+1]);
+    }
+    strcat(information,"");
+    
+    f_mount(&fs,"",1);
+    f_sync(&file);
+
+    fr = f_open(&file, "TEST.TXT", FA_WRITE | FA_OPEN_APPEND);
+    fr = f_write(&file, information, strlen(information), &bw);
+    delay_1ms(400);
+
+    f_sync(&file);
+
+    f_close(&file);
+    delay_1ms(100);
+
+}
+
+void init_PWM_example(){
+
+    /* These structs are used for configuring the timer */
+    timer_oc_parameter_struct timer_ocinitpara;
+    timer_parameter_struct timer_initpara;
+
+    /* First we need to enable the clock for the timer */
+    rcu_periph_clock_enable(RCU_TIMER4);
+
+    /* Reset the timer to a known state */
+    timer_deinit(TIMER4);
+
+    /* This function sets the struct up with default values */
+    timer_struct_para_init(&timer_initpara);
+
+    /* timer configuration */
+    timer_initpara.prescaler         = 1;                   // Prescaler 1 gives counter clock of 108MHz/2 = 54MHz 
+    timer_initpara.alignedmode       = TIMER_COUNTER_EDGE;  // count alignment edge = 0,1,2,3,0,1,2,3... center align = 0,1,2,3,2,1,0
+    timer_initpara.counterdirection  = TIMER_COUNTER_UP;    // Counter direction
+    timer_initpara.period            = 4095;                // Sets how far to count. 54MHz/4096 = 13,2KHz (max is 65535)
+    timer_initpara.clockdivision     = TIMER_CKDIV_DIV1;    // This is used by deadtime, and digital filtering (not used here though)
+    timer_initpara.repetitioncounter = 0;                   // Runs continiously
+    timer_init(TIMER4, &timer_initpara);                    // Apply settings to timer
+
+
+    /* This function initializes the channel setting struct */
+    timer_channel_output_struct_para_init(&timer_ocinitpara);
+    /* PWM configuration */
+    timer_ocinitpara.outputstate  = TIMER_CCX_ENABLE;                   // Channel enable
+    timer_ocinitpara.outputnstate = TIMER_CCXN_DISABLE;                 // Disable complementary channel
+    timer_ocinitpara.ocpolarity   = TIMER_OC_POLARITY_HIGH;             // Active state is high
+    timer_ocinitpara.ocnpolarity  = TIMER_OCN_POLARITY_HIGH;    
+    timer_ocinitpara.ocidlestate  = TIMER_OC_IDLE_STATE_LOW;            // Idle state is low
+    timer_ocinitpara.ocnidlestate = TIMER_OCN_IDLE_STATE_LOW;
+    timer_channel_output_config(TIMER4,TIMER_CH_1,&timer_ocinitpara);   // Apply settings to channel
+
+    timer_channel_output_pulse_value_config(TIMER4,TIMER_CH_1,0);                   // Set pulse width
+    timer_channel_output_mode_config(TIMER4,TIMER_CH_1,TIMER_OC_MODE_PWM0);         // Set pwm-mode
+    timer_channel_output_shadow_config(TIMER4,TIMER_CH_1,TIMER_OC_SHADOW_DISABLE);
+
+    /* auto-reload preload enable */
+    timer_auto_reload_shadow_enable(TIMER4);
+
+    /* start the timer */
+    timer_enable(TIMER4);
+}
