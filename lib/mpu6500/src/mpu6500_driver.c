@@ -57,16 +57,16 @@ int mpu6500_init(void (*read_cb)(void* pHandle, uint8_t addr, uint8_t reg, uint8
 	write_buffer[0] = 0x00;
 	write_mpu(MPU6500_SMPLRT_DIV, 1, write_buffer);
 
-	write_buffer[0] = MPU6500_G_DLPF_92HZ;
+	write_buffer[0] = MPU6500_G_DLPF_92HZ;				// Frekvensen vi vill configurera med, förmodligen vill vi sänka den för att få tydligare data (mer info i MPU 6500 datasheet)
 	write_mpu(MPU6500_CONFIG, 1, write_buffer);
 
-	write_buffer[0] = MPU6500_GYRO_FS_2000DPS;
+	write_buffer[0] = MPU6500_GYRO_FS_2000DPS;			// Inställd skala för att läsa av från Gyron, kan ändras om vi inte vill lika känslig data alt känsligare data (mer info i MPU 6500 datasheet)
 	write_mpu(MPU6500_GYRO_CONFIG, 1, write_buffer);
 
-	write_buffer[0] = MPU6500_ACCEL_FS_8G;
+	write_buffer[0] = MPU6500_ACCEL_FS_8G;				// Inställd skala för att läsa av från Gyron, kan ändras om vi inte vill lika känslig data alt känsligare data (mer info i MPU 6500 datasheet)
 	write_mpu(MPU6500_ACCEL_CONFIG, 1, write_buffer);
 	
-	write_buffer[0] = MPU6500_A_DPLF_92HZ;
+	write_buffer[0] = MPU6500_A_DPLF_92HZ;				// Frekvensen vi vill configurera med, förmodligen vill vi sänka den för att få tydligare data (mer info i MPU 6500 datasheet)
 	write_mpu(MPU6500_ACCEL_CONFIG2, 1, write_buffer);
 
 	write_buffer[0] = MPU6500_LATCH_INT_EN | MPU6500_INT_ANYRD_2CLEAR | MPU6500_INT_BYPASS_EN;
@@ -79,9 +79,11 @@ int mpu6500_init(void (*read_cb)(void* pHandle, uint8_t addr, uint8_t reg, uint8
 
 }
 
+// MPU 6500 DataSheet: http://invensense.wpenginepowered.com/wp-content/uploads/2020/06/PS-MPU-6500A-01-v1.3.pdf
+
 int mpu6500_getAccel(mpu_vector_t* pAccel){
 	mpu_raw_vector_t accel;
-	read_mpu(MPU6500_ACCEL_XOUT_H, 6, (uint8_t*) &accel);
+	read_mpu(MPU6500_ACCEL_XOUT_H, 6, (uint8_t*) &accel); 	// Skickar rådata som måste skalas i main. (mer info i MPU 6500 datasheet)
 	pAccel->x = (float) flip_bytes(accel.x);
 	pAccel->y = (float) flip_bytes(accel.y);
 	pAccel->z = (float) flip_bytes(accel.z);
@@ -90,7 +92,7 @@ int mpu6500_getAccel(mpu_vector_t* pAccel){
 
 int mpu6500_getGyro(mpu_vector_t* pGyro){
 	mpu_raw_vector_t gyro;
-	read_mpu(MPU6500_GYRO_XOUT_H, 6, (uint8_t*) &gyro);
+	read_mpu(MPU6500_GYRO_XOUT_H, 6, (uint8_t*) &gyro); 	// Skickar rådata som måste skalas i main. (mer info i MPU 6500 datasheet)
 	pGyro->x = (float) flip_bytes(gyro.x);
 	pGyro->y = (float) flip_bytes(gyro.y);
 	pGyro->z = (float) flip_bytes(gyro.z);
