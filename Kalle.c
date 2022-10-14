@@ -134,6 +134,8 @@ int main(void) {
         // Acc:
         // The vector R is the force vector that the accelerometer is measuring (it could be either the gravitation force or the inertial force from the examples above or a combination of both).
         // R^2 = Rx^2 + Ry^2 + Rz^2
+	
+	// https://itp.nyu.edu/physcomp/lessons/accelerometers-gyros-and-imus-the-basics/
 
         // https://robotics.stackexchange.com/questions/18446/how-to-transform-raw-accelerometer-data-into-the-earth-fixed-frame-to-determine
         // https://www.i2cdevlib.com/forums/topic/4-understanding-raw-values-of-accelerometer-and-gyrometer/
