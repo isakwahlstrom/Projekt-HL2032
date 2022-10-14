@@ -7,7 +7,8 @@
 #include "stdio.h"
 #include "string.h"
 #include "gd32v_tf_card_if.h"
-#include "pwm.h"
+#include "pwm.h"'
+#include "math.h"
 
 /* Define global variables */
 #define GRAPH_HEIGHT 30
@@ -24,6 +25,8 @@ struct Package {
 };
 
 ////////////////////////// Define functions /////////////////////////////////////////
+void Initialize_Project();
+
 
 void Recive_IMU_Data(struct Package *package);
 void Send_IMU_Data(struct Package package);
@@ -34,6 +37,8 @@ void SendToSD(float data[]);
 
 void init_PWM_example();
 
+unsigned int int_sqrt ( unsigned int s );
+unsigned int convert_int_to_float ( float f);
 /* Main function */
 
 int main(void) {
@@ -102,18 +107,30 @@ int main(void) {
 
         /////////////////////////////////////////////////// Math //////////////////////////////////////////////////////////// 
         // 2D Matrix: https://beginnersbook.com/2014/01/2d-arrays-in-c-example/
+        int room[500][500] = 0;
+        int StartX = 250, StartY = 250;
+        room[StartX][StartY] = 1;
+        int LatestX, LatestY;
         // 3D Matrix: https://owlcation.com/stem/How-to-work-with-Multidimensional-Array-in-C-Programming
         Ax = package2.aX - package.aX;
         Ay = package2.aY - package.aY;
         Gx = package2.gX - package.gX;
         Gy = package2.gY - package.gY;
-
+        
         PosX += Ax*Gx;
         PosY += Ay*Gy;
         // PosX = ba * bo;
         // PosY = sa * so;
         
         /* Skriv kod för att navigera i ett 2D rutnät */
+        room[LatestX][LatestY] = 0;
+
+        LatestX += StartX + int_sqrt((package.aX*package.aX));
+        LatestY += StartY + int_sqrt((package.aY*package.aY));
+
+        room[LatestX][LatestY] = 1;
+        // https://en.wikipedia.org/wiki/Integer_square_root
+        // https://www.vedantu.com/maths/magnitude-of-a-vector
         // Acc:
         // The vector R is the force vector that the accelerometer is measuring (it could be either the gravitation force or the inertial force from the examples above or a combination of both).
         // R^2 = Rx^2 + Ry^2 + Rz^2
@@ -143,9 +160,9 @@ int main(void) {
         data[clock] = PosX;
         data[clock + 1] = PosY;   
         if (clock == 10){
-            SendToSD(data);
+            //SendToSD(data);
             clock = 0;
-            LCD_ShowChar(50,50,'X',TRANSPARENT,GREEN);
+            //LCD_ShowChar(50,50,'X',TRANSPARENT,GREEN);
         }
     
         delay_1ms(1000);
@@ -233,7 +250,7 @@ void HapticFeedback(float x, float y){
     } else {
         value = 0;
     }
-    T1setPWMotorB(value);
+    T1setPWMmotorB(value);
 }
 
 void SendToSD(float data[]){
@@ -314,4 +331,33 @@ void init_PWM_example(){
 
     /* start the timer */
     timer_enable(TIMER4);
+}
+
+// Square root of integer
+unsigned int int_sqrt ( unsigned int s )
+{
+	// Zero is always yields zero
+	if (s == 0) 
+		return 0;
+
+	unsigned int x0 = s / 2;				// Initial estimate
+
+	unsigned int x1 = ( x0 + s / x0 ) / 2;	// Update
+		
+	while ( x1 < x0 )						// Bound check
+	{
+		x0 = x1;
+		x1 = ( x0 + s / x0 ) / 2;
+	}		
+	return x0;
+}
+
+unsigned int convert_int_to_float ( float f) {
+    int integer, decimal;
+    integer = f;
+    decimal = (f - integer ) * 10;
+    if (decimal >= 5){
+        integer++;
+    }
+    return integer;
 }
