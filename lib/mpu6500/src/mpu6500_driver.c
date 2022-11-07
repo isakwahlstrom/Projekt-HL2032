@@ -63,7 +63,7 @@ int mpu6500_init(void (*read_cb)(void* pHandle, uint8_t addr, uint8_t reg, uint8
 	write_buffer[0] = MPU6500_GYRO_FS_2000DPS;			// Inställd skala för att läsa av från Gyron, kan ändras om vi inte vill lika känslig data alt känsligare data (mer info i MPU 6500 datasheet)
 	write_mpu(MPU6500_GYRO_CONFIG, 1, write_buffer);
 
-	write_buffer[0] = MPU6500_ACCEL_FS_8G;				// Inställd skala för att läsa av från Gyron, kan ändras om vi inte vill lika känslig data alt känsligare data (mer info i MPU 6500 datasheet)
+	write_buffer[0] = MPU6500_ACCEL_FS_2G;				// Inställd skala för att läsa av från Gyron, kan ändras om vi inte vill lika känslig data alt känsligare data (mer info i MPU 6500 datasheet)
 	write_mpu(MPU6500_ACCEL_CONFIG, 1, write_buffer);
 	
 	write_buffer[0] = MPU6500_A_DPLF_92HZ;				// Frekvensen vi vill configurera med, förmodligen vill vi sänka den för att få tydligare data (mer info i MPU 6500 datasheet)
