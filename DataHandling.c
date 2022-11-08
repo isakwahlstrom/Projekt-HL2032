@@ -30,6 +30,8 @@ int main(){
     // 
     uint64_t start_mtime, final_mtime;
 
+    
+
     enum stateenum{standby, movement, calculation};
     enum stateenum state;
 
@@ -129,17 +131,20 @@ int main(){
         // Get the active time and sum of acceleration from the movment
         if(totalAcc > (acctualG + movmentLimit)){
             state = movement;
-            final_mtime = get_timer_value() + (SystemCoreClock/4000.0 *100);
+            if(state == standby) start_mtime = get_timer_value() + (SystemCoreClock/4000.0 *100);
+            else start_mtime += (SystemCoreClock/4000.0 *100);
             dAX += aX;
             dAY += aY;
             dAZ += aZ;
-            delay_1ms(50);     // we're reading values to fast, maybe we should change the frequency in the MPU driver?
+            // delay_1ms(50);     // we're reading values to fast, maybe we should change the frequency in the MPU driver?
         }
 
-        if((get_timer_value > final_mtime) && (state == movement)){
+        final_mtime = get_timer_value();
+
+        if((final_mtime > start_mtime) && (state == movement)){
             state = calculation;
         }
-
+        
         // Calculate final position when the movement is "finished".
         if((state == calculation) && (totalAcc < (acctualG + movmentLimit))){
             time = final_mtime - start_mtime;
