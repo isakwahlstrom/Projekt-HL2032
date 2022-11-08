@@ -5,6 +5,21 @@
 
 // It seems to work but some values are a bit off and we're still getting a lot of disturbance.
 
+// To fix the disturbance we'll:
+// DONE! create an addapted constant for the initial gravitational pull to compare with the sum value.
+// add a exakt timer from the internal System Clock.
+// DONE! adjust the calculations of the total acceleration on the IMU
+// adjust the movementLimit.
+// fine tune from testing.
+
+// Maybe change the reading frequensy in the MPU driver.
+// Maybe add / change the indicator for a started movement as an change in the total vector of the hand compared to the one on the chest.
+
+// Wake-on-motion interrupt for low power operation of applications processor ??? From Datasheet
+
+void sqRoot(float nr, float *root);
+int power(int nr,int n);
+
 int main(){
 	/* The related data structure for the IMU, contains a vector of x, y, z floats*/
     // We're just dependent on knowing the Acceleration for this solution. Should we add Gyro, for what purpose?
@@ -12,7 +27,7 @@ int main(){
     mpu_vector_t Acc, AccHand;
 
     // 
-    uint64_t start_mtime, delta_mtime;
+    uint64_t start_mtime, final_mtime;
 
     /* Initialize pins for I2C */
     rcu_periph_clock_enable(RCU_GPIOB);
@@ -29,6 +44,7 @@ int main(){
     LCD_Clear(1);
     
     // Create the constant G and a timer (should be changed to a reliable / correct clock)
+    float acctualG = 9.9;
     float G = 9.806;
     float time = 0;
 
@@ -41,7 +57,7 @@ int main(){
     int negativeX = 0, negativeY = 0, negativeZ = 0;
     float dAX = 0, dAY = 0, dAZ = 0;
     float distance = 0;
-    
+
     // Navigation in the room
     float position[3] = {200.0,200.0,200.0};
     int room[200][200][200];
@@ -93,8 +109,9 @@ int main(){
         // However I think this solution is more reliable or at least more independent.
 
         // Get the total Acc vector, when still it is the gravitational pull from the earth (Seems to be a bit off??)
-        totalAcc = aX + aY + aZ;        // Should add upp to ca: 1.0 G
-        totalAcc = totalAcc*G;          // Should add upp to ca: 9.8 m/s^2
+        totalAcc = (aX*aX) + (aY*aY) + (aZ*aZ);         // 3D - Pythagoras
+        sqRoot(totalAcc,&totalAcc);                     // Should add upp to ca: 1.0 G
+        totalAcc = totalAcc*G;                          // Should add upp to ca: 9.8 m/s^2
 
         // Display the total Acc value
 		LCD_ShowNum1(20,50,totalAcc,4,BLUE);
@@ -105,7 +122,8 @@ int main(){
         aZ = aZ*G;
 
         // Get the active time and sum of acceleration from the movment
-        if(totalAcc > (G + movmentLimit)){
+        if(totalAcc > (acctualG + movmentLimit)){
+            final_mtime = get_timer_value() + (SystemCoreClock/4000.0 *100);
             time++;
             dAX += aX;
             dAY += aY;
@@ -113,8 +131,13 @@ int main(){
             delay_1ms(50);     // we're reading values to fast, maybe we should change the frequency in the MPU driver?
         }
 
+        if(get_timer_value > final_mtime){
+            
+        }
+
         // Calculate final position when the movement is "finished".
-        if((time != 0) && (totalAcc < (G + movmentLimit))){
+        if((get_timer_value > final_mtime) && (totalAcc < (acctualG + movmentLimit))){
+            
             if (dAX > 0){
                 dAX = dAX / time;           // The avrage acceleration 
                 dAX = dAX - aX;             // Take away the gravitational pull
@@ -167,4 +190,30 @@ int main(){
         delay_1ms(50);
     }
 
+}
+
+void sqRoot(float nr, float *root){
+        int i=1,j=1;
+        float x0=1.0;
+        float xn=1.0;
+        for(i=1,j=1;i<nr;i=i*10,j++)
+            if(nr/i==0)
+                i=nr;
+        i=i/10;
+        j=j-1;
+        if(j>1) x0=j*power(10,j/2);
+        int a;
+        for(a=1;a<=10;a++){
+            xn=0.5*(x0+(nr/x0));
+            x0=xn;
+        }
+        *root = xn;
+    }
+
+int power(int nr,int n) {
+    int pow=1;
+    int i;
+    for(i=1;i<n;i++)
+        pow=pow*nr;
+    return pow;
 }
