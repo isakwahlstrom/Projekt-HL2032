@@ -32,8 +32,10 @@ int main(){
 
     
 
-    enum stateenum{standby, movement, calculation};
-    enum stateenum state;
+    enum statemachine{standby, movement, calculation};
+    enum statemachine State, nextState;
+    State = standby;
+    nextState = standby;
 
     /* Initialize pins for I2C */
     rcu_periph_clock_enable(RCU_GPIOB);
@@ -89,9 +91,9 @@ int main(){
     int giveFeedback = 0;
 
     while(1){
+        State = nextState;
         // Get accelleration data (Note: Blocking read) puts a force vector with 1G = 16 384 into x, y, z directions respectively
         mpu6500_getAccel(&Acc);
-        state = standby;
 
         // Scale the floats of the x, y z direction indicators (Values in G-force)
         aX = Acc.x / 16384;
@@ -130,8 +132,8 @@ int main(){
 
         // Get the active time and sum of acceleration from the movment
         if(totalAcc > (acctualG + movmentLimit)){
-            state = movement;
-            if(state == standby) start_mtime = get_timer_value() + (SystemCoreClock/4000.0 *100);
+            nextState = movement;
+            if(State == standby) start_mtime = get_timer_value() + (SystemCoreClock/4000.0 *100);
             else start_mtime += (SystemCoreClock/4000.0 *100);
             dAX += aX;
             dAY += aY;
@@ -141,12 +143,12 @@ int main(){
 
         final_mtime = get_timer_value();
 
-        if((final_mtime > start_mtime) && (state == movement)){
-            state = calculation;
+        if((final_mtime > start_mtime) && (State == movement)){
+            nextState = calculation;
         }
         
         // Calculate final position when the movement is "finished".
-        if((state == calculation) && (totalAcc < (acctualG + movmentLimit))){
+        if((State == calculation) && (totalAcc < (acctualG + movmentLimit))){
             time = final_mtime - start_mtime;
             if (dAX > 0){
                 dAX = dAX / time;           // The avrage acceleration 
@@ -176,7 +178,7 @@ int main(){
                 negativeZ = 0;
             }
             distance = 0;
-            state = standby;
+            nextState = standby;
             // Add a repetition to a position in the room
             posX = position[0];
             posY = position[1];
@@ -204,26 +206,29 @@ int main(){
 
 void sqRoot(float nr, float *root){
         int i = 1, j = 1;
-        float x0 = 1.0;
-        float xn = 1.0;
+        float x0 = 1.0, xn = 1.0;
+
         for(i=1, j=1; i < nr; i=i*10, j++)
             if(nr/i == 0)
                 i=nr;
         i = i/10;
         j = j-1;
         if(j > 1) x0 = j*power(10,j/2);
-        int a;
-        for(a = 1; a <= 10; a++){
+
+        for(int a = 1; a <= 10; a++){
             xn = 0.5*(x0 + (nr/x0));
             x0 = xn;
         }
+
         *root = xn;
     }
 
 int power(int nr,int n) {
     int pow = 1;
     int i;
+	
     for(i = 1; i < n; i++)
         pow = pow*nr;
+	
     return pow;
 }
