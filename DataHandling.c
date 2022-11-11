@@ -30,12 +30,11 @@ int main(){
     // 
     uint64_t start_mtime, final_mtime;
 
-    
-
-    enum statemachine{standby, movement, calculation};
-    enum statemachine State, nextState;
-    State = standby;
-    nextState = standby;
+    /* Create a State Machine with 3 states: Stand-by, Movement and Calculation */
+    enum StateMachine{Standby, Movement, Calculation};
+    enum StateMachine State, nextState;
+    State = Standby;
+    nextState = Standby;
 
     /* Initialize pins for I2C */
     rcu_periph_clock_enable(RCU_GPIOB);
@@ -132,8 +131,8 @@ int main(){
 
         // Get the active time and sum of acceleration from the movment
         if(totalAcc > (acctualG + movmentLimit)){
-            nextState = movement;
-            if(State == standby) start_mtime = get_timer_value() + (SystemCoreClock/4000.0 *100);
+            nextState = Movement;
+            if(State == Standby) start_mtime = get_timer_value() + (SystemCoreClock/4000.0 *100);
             else start_mtime += (SystemCoreClock/4000.0 *100);
             dAX += aX;
             dAY += aY;
@@ -143,12 +142,12 @@ int main(){
 
         final_mtime = get_timer_value();
 
-        if((final_mtime > start_mtime) && (State == movement)){
-            nextState = calculation;
+        if((final_mtime > start_mtime) && (State == Movement)){
+            nextState = Calculation;
         }
         
         // Calculate final position when the movement is "finished".
-        if((State == calculation) && (totalAcc < (acctualG + movmentLimit))){
+        if((State == Calculation) && (totalAcc < (acctualG + movmentLimit))){
             time = final_mtime - start_mtime;
             if (dAX > 0){
                 dAX = dAX / time;           // The avrage acceleration 
@@ -178,7 +177,7 @@ int main(){
                 negativeZ = 0;
             }
             distance = 0;
-            nextState = standby;
+            nextState = Standby;
             // Add a repetition to a position in the room
             posX = position[0];
             posY = position[1];
@@ -226,9 +225,7 @@ void sqRoot(float nr, float *root){
 int power(int nr,int n) {
     int pow = 1;
     int i;
-	
     for(i = 1; i < n; i++)
         pow = pow*nr;
-	
     return pow;
 }
