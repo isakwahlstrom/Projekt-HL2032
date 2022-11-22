@@ -216,6 +216,7 @@ int main()
         Sätta in koden i Switch satsen (state machine).
         Ändra gränsen för rörelse, använda Vel istället för Acc, lägg till en bra död zon.
         Summera hastigheterna istället för Ax * time.
+        Navigera med negativa värden.
         Rensa upp koden.
         */
 
