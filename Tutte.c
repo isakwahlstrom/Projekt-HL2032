@@ -98,7 +98,7 @@ int main(void) {
     
         delay_1ms(1000);
         clock += 2;
-	      LCD_Clear(1);
+	LCD_Clear(1);
     };
 }
 
@@ -181,7 +181,7 @@ void SendToSD(float data[]){
     f_mount(&fs,"",1);
     f_sync(&file);
 
-    fr = f_open(&file, "TEST.TXT", FA_WRITE | FA_OPEN_APPEND);
+    fr = f_open(&file, "DATA.TXT", FA_WRITE | FA_OPEN_APPEND);
     fr = f_write(&file, information, strlen(information), &bw);
     delay_1ms(400);
 
