@@ -261,7 +261,7 @@ void HapticFeedback(float x, float y){
     T1setPWMmotorB(value);
 }
 
-int repsInRedZone(int data[][][]){
+int repsInRedZone(int data[200][200][200]){
     int repsRed = 0;
     for(int x = 0; x < 200; x++){
         for(int y = 0; y < 200; y++){
