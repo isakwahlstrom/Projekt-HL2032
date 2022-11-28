@@ -33,7 +33,8 @@ void Send_IMU_Data(struct Package package);
 
 void HapticFeedback(float x, float y);
 
-void SendToSD(float data[]);
+int repsInRedZone(int data[][][]);
+void SendToSD(int data);
 
 void init_PWM_example();
 
@@ -83,9 +84,10 @@ int main(void) {
     /////////////////////////////////// SD-Card variables ///////////////////////////////////////// 
     
     /* Create array for transmiting data to SD-Card & Clock to see when we should send it */
-    float data[128] = {11.11,22.22,11.11,33.33,11.11,44.44,11.11,55.55,11.11,66.66};
+    //float data[128] = {11.11,22.22,11.11,33.33,11.11,44.44,11.11,55.55,11.11,66.66};
     int clock = 0;
-	
+	int data[200][200][200];
+    int done = 0;
     
     
     /* Infinity while loop to always check gyro/acc & sedn/recive */
@@ -159,17 +161,21 @@ int main(void) {
         delay_1ms(6);
 
         /////////////////////////////////////////////////// SD-Card //////////////////////////////////////////////////////////// 
-        data[clock] = PosX;
-        data[clock + 1] = PosY;   
-        if (clock == 10){
-            //SendToSD(data);
-            clock = 0;
-            //LCD_ShowChar(50,50,'X',TRANSPARENT,GREEN);
+        if(done == 1){
+            SendToSD(repsInRedZone(data));
         }
+        //data[clock] = PosX;
+        //data[clock + 1] = PosY;   
+        //if (clock == 10){
+            //SendToSD(data);
+            //clock = 0;
+            //LCD_ShowChar(50,50,'X',TRANSPARENT,GREEN);
+        //}
+        
     
         delay_1ms(1000);
-        clock += 2;
-	    LCD_Clear(1);
+        //clock += 2;
+	    //LCD_Clear(1);
     };
 }
 
@@ -255,7 +261,19 @@ void HapticFeedback(float x, float y){
     T1setPWMmotorB(value);
 }
 
-void SendToSD(float data[]){
+int repsInRedZone(int data[][][]){
+    int repsRed = 0;
+    for(int x = 0; x < 200; x++){
+        for(int y = 0; y < 200; y++){
+            for(int z = 0; z < 200; z++){
+                repsRed += data[x][y][z];
+            }
+        }
+    }
+    return repsRed;
+}
+
+void SendToSD(int data){
     FATFS fs;
     volatile FRESULT fr;
     FIL file;
@@ -263,21 +281,18 @@ void SendToSD(float data[]){
     UINT bw = 0;
 
     char information[128];
-    int integerX, integerY, decimalX, decimalY;
     
     set_fattime(2022,10,12,0,0,0);
     delay_1ms(100);
     
     strcpy(information,"");
-    for (int i = 0; i < 10; i+=2){
-        sprintf(&information[strlen(information)], "%02f / %02f | ", data[i], data[i+1]);
-    }
+    sprintf(&information[strlen(information)], "%d", data);
     strcat(information,"");
     
     f_mount(&fs,"",1);
     f_sync(&file);
 
-    fr = f_open(&file, "TEST.TXT", FA_WRITE | FA_OPEN_APPEND);
+    fr = f_open(&file, "DATA.TXT", FA_WRITE | FA_OPEN_APPEND);
     fr = f_write(&file, information, strlen(information), &bw);
     delay_1ms(400);
 
