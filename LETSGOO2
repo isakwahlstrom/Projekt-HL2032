@@ -1,20 +1,8 @@
-/* 
-Replace this file with your code. Put your source files in this directory and any libraries in the lib folder. 
-If your main program should be assembly-language replace this file with main.S instead.
-
-Libraries (other than vendor SDK and gcc libraries) must have .h-files in /lib/[library name]/include/ and .c-files in /lib/[library name]/src/ to be included automatically.
-*/
 #include "gd32vf103.h"
 #include "lcd.h"
 #include "delay.h"
 #include "gd32v_mpu6500_if.h"
 
-
-#define GRAPH_HEIGHT    30
-#define BITMASK 0xFFFFFFF8
-
-float sqRoot(float nr);
-int power(int nr, int n);
 int convert_int_to_float(float f);
 
 int main(){
