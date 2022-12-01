@@ -3,10 +3,6 @@
 #include "delay.h"
 #include "gd32v_mpu6500_if.h"
 
-
-#define GRAPH_HEIGHT    30
-#define BITMASK 0xFFFFFFF8
-
 float sqRoot(float nr);
 int power(int nr, int n);
 int convert_int_to_float(float f);
