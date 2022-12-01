@@ -25,7 +25,11 @@ int main(){
        ICM-20600 is mostly register compatible with MPU6500, if MPU6500 is used only thing that needs 
        to change is MPU6500_WHO_AM_I_ID from 0x11 to 0x70. */
     mpu6500_install(I2C0);
-    
+
+    rcu_periph_clock_enable(RCU_GPIOA);
+    /* This configures the A3 and A4 pins as inputs with internal pull ups enabled */
+    gpio_init(GPIOA, GPIO_MODE_IN_FLOATING, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
+
     /* Initialize LCD */
     Lcd_SetType(LCD_INVERTED);
     Lcd_Init();
@@ -34,8 +38,8 @@ int main(){
 
     while(1){
         // Read button pressed (GPIO-pin)
-        if(mamma){ // if Button is pressed
-	    while(mamma); // while Button is pressed
+        if(gpio_input_bit_get(GPIOA, GPIO_PIN_6)){          // if Button is pressed                    
+            while(gpio_input_bit_get(GPIOA, GPIO_PIN_6));   // while Button is pressed
             if(on == 0)
             {
                 on = 1;
@@ -43,6 +47,8 @@ int main(){
                 on = 0;
             }
         }
+
+        LCD_ShowNum(20,20,on,2,BLUE);
 
         // Change state between break and work
         if(on == 0)
