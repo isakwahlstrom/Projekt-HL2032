@@ -8,13 +8,13 @@ int convert_int_to_float(float f);
 int main(){
 	/* The related data structure for the IMU, contains a vector of x, y, z floats*/
     mpu_vector_t Acc;
-    /* for lcd */
-    uint16_t line_color;
+    
+    /* Unsigned ints and a float to get the timer value and calulate the passed time */ 
+    uint64_t start_mtime, delta_mtime;
 
     float x, y, z;
-    
     int redReps = 0;
-    int clock = 0;
+    int period = 7200;
 
     /* Initialize pins for I2C */
     rcu_periph_clock_enable(RCU_GPIOB);
@@ -29,6 +29,7 @@ int main(){
     Lcd_SetType(LCD_INVERTED);
     Lcd_Init();
     LCD_Clear(1);
+    start_mtime = get_timer_value();
 
     while(1){
         // Get accelleration data (Note: Blocking read) puts a force vector with 1G = 4096 into x, y, z directions respectively
@@ -71,28 +72,14 @@ int main(){
             // Or....
             // Light LED
         }
+        
+        // Count up the time passed in ms
+        delta_mtime = get_timer_value() - start_mtime;
 
         // Send to SD-Card after 2 hours of work
-        if (clock == 7200){
+        if (delta_mtime >(SystemCoreClock/4000.0 *period)){
             // Send redReps to SD-Card
         }
-
-        // Add one second cykle
-        delay_1ms(1000);
-        clock++;
     }
 
-}
-
-/* Function to convert a float to integer */
-int convert_int_to_float ( float f) 
-{
-    int integer, decimal;
-    integer = (int) f;
-    if(integer == 0) return
-    decimal = (int) (f - integer ) * 10;
-    if (decimal >= 5){
-        integer++;
-    }
-    return integer;
 }
