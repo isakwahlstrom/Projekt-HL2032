@@ -12,6 +12,9 @@ int main(){
     uint16_t line_color;
 
     float x, y, z;
+    
+    int redReps = 0;
+    int clock = 0;
 
     /* Initialize pins for I2C */
     rcu_periph_clock_enable(RCU_GPIOB);
@@ -49,6 +52,7 @@ int main(){
             LCD_Clear(GREEN);
         } else {
             LCD_Clear(RED);
+            redReps += 1;
         }
 
         // OR......
@@ -59,6 +63,23 @@ int main(){
         // } else {
         //     LCD_Clear(GREEN);
         // }
+
+        // Give haptic feedback every 10th repetition
+        if((redReps%10)==0)
+        {
+            // Send vibration
+            // Or....
+            // Light LED
+        }
+
+        // Send to SD-Card after 2 hours of work
+        if (clock == 7200){
+            // Send redReps to SD-Card
+        }
+
+        // Add one second cykle
+        delay_1ms(1000);
+        clock++;
     }
 
 }
