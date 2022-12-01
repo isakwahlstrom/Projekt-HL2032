@@ -34,7 +34,8 @@ int main(){
 
     while(1){
         // Read button pressed (GPIO-pin)
-        if(mamma){ // Button is pressed
+        if(mamma){ // if Button is pressed
+	    while(mamma); // while Button is pressed
             if(on == 0)
             {
                 on = 1;
