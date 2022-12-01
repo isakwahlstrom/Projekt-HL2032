@@ -1,9 +1,3 @@
-/* 
-Replace this file with your code. Put your source files in this directory and any libraries in the lib folder. 
-If your main program should be assembly-language replace this file with main.S instead.
-
-Libraries (other than vendor SDK and gcc libraries) must have .h-files in /lib/[library name]/include/ and .c-files in /lib/[library name]/src/ to be included automatically.
-*/
 #include "gd32vf103.h"
 #include "lcd.h"
 #include "delay.h"
