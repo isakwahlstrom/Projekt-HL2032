@@ -16,8 +16,6 @@
 ////////////////////////// Define functions /////////////////////////////////////////
 void Initialize_Project();
 
-void HapticFeedback();
-
 void SendToSD(int data);
 
 unsigned int convert_int_to_float ( float f);
@@ -143,11 +141,6 @@ void Initialize_Project(){
     /* Init pins for heptic feedback. */
     T1powerUpInitPWM(0x3);                  //Starts A0 and A1.
 
-}
-
-void HapticFeedback(){
-    T1setPWMmotorB(1);
-    
 }
 
 void SendToSD(int data){
