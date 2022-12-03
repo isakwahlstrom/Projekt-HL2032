@@ -8,12 +8,17 @@
 #include "gd32v_tf_card_if.h"
 #include "pwm.h"
 
+// Fungerar nu som vi vill :)
+// Just nu saknas bara att:
+// Ändra i drivern för mpu6500 enligt Linus instruktioner på måndag så vi kan läsa av data från den separata IMUn.
+// Och sedan då läsa in den andra sensorn på samma vis och lyckas skilja på dom, mha Linus.
+
 ////////////////////////// Define functions /////////////////////////////////////////
 void Initialize_Project();
 
 void SendToSD(int data);
 
-unsigned int convert_int_to_float ( float f);
+unsigned int convert_int_to_float (float f);
 
 ///////////////////////////// Main function /////////////////////////////////////////
 int main(void) {
@@ -28,7 +33,7 @@ int main(void) {
 
 	/* The related data structure for the IMU, contains a vector of x, y, z floats*/
     mpu_vector_t Acc, Acc2;
-    float y;
+    float y, y2;
     int on = 0;
     int G=0, R=0, S=0;         // States
 
@@ -70,8 +75,11 @@ int main(void) {
             mpu6500_getAccel(&Acc);                 // Get accelleration data (Note: Blocking read) puts a force vector with 1G = 4096 into x, y, z directions respectively
             y = Acc.y / 16384;                      // Scale to G values
 
+            //mpu6500_getAccel(&Acc2);                // Get accelleration data (Note: Blocking read) puts a force vector with 1G = 4096 into x, y, z directions respectively
+            //y2 = (-1)*Acc2.y / 16384;              // Scale to G values
+
             // Compare y to the gravitational pull, y is higher then 0.8 G we're in the Green zone
-            if(y>=0.8)  {
+            if(y>=0.8)  {            // if((y>=0.8) || (y2>=0.9))  {
                 if(G==0){
                     LCD_Clear(GREEN);
                     G=1;
