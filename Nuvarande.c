@@ -77,6 +77,10 @@ int main(void) {
                     G=1;
                     R=0;
                 }
+            } else if(y>=0.7){
+                // Dead-zone
+                R=0;
+                G=0;
             } else {
                 if(R==0){
                     LCD_Clear(RED);
