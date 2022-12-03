@@ -95,41 +95,6 @@ int main(void) {
             }
             S = 0;
         }
-        /*
-        
-        // Get accelleration data (Note: Blocking read) puts a force vector with 1G = 4096 into x, y, z directions respectively
-        mpu6500_getAccel(&Acc);
-
-        // Add information from Acc2, our IMU on the wrist 
-
-        // Scale to G values
-        y = Acc.y / 16384;
-
-        // Compare y to the gravitational pull, y is higher then 0.8 G we're in the Green zone
-        if(y>=0.8)  {
-            if(G==0){
-                LCD_Clear(GREEN);
-                G=1;
-                R=0;
-            }
-        } else {
-            if(R==0){
-                LCD_Clear(RED);
-                R=1;
-                redReps += 1;
-                G=0;
-                if((redReps%10)==0 && (redReps>0)) {
-                     // Send vibration ... Or.... Light LED
-                     startH_mtime = get_timer_value();
-                }
-            }
-            deltaH_mtime = get_timer_value() - startH_mtime;
-            if (deltaH_mtime < (SystemCoreClock/4000.0 *hepticPeriod)){
-                T1setPWMmotorB(1);
-            } else T1setPWMmotorB(0);
-        }
-        */
-        
 
         /////////////////////////////////////////////////// SD-Card //////////////////////////////////////////////////////////// 
         // Count up the time passed in ms
