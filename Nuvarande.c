@@ -44,49 +44,44 @@ int main(void) {
     /* Infinity while loop to always check Acc, gives feedback and sends info to SD-card */
 	while(1) {
         ///////////////////////////////////////////////// Accel & Gyro //////////////////////////////////////////////////////
-		 
+		
         // Read button pressed (GPIO-pin)
-        if(gpio_input_bit_get(GPIOA, GPIO_PIN_6) == RESET) {          // if Button is pressed        
-            while(gpio_input_bit_get(GPIOA, GPIO_PIN_6) == RESET);    // while Button is pressed
+        if(gpio_input_bit_get(GPIOA, GPIO_PIN_6) == SET) {          // if Button is pressed        
             if(on == 0) {
                 on = 1; 
             } else {
                 on = 0;
             }
+            while(gpio_input_bit_get(GPIOA, GPIO_PIN_6) == SET);    // while Button is pressed
         }
 
-        // Change state between break and work   Button ON / OFF
-        if(on == 0)
-        {
+        if(on == 0) {
             // On a break 
             start_mtime = get_timer_value();
             if(S == 0){
                 LCD_Clear(1);
                 S=1;
+                G=0;
+                R=0;
             }
         } else {
-            // Get accelleration data (Note: Blocking read) puts a force vector with 1G = 4096 into x, y, z directions respectively
-            mpu6500_getAccel(&Acc);
-
             // Add information from Acc2, our IMU on the wrist 
 
-            // Scale to G values
-            y = Acc.y / 16384;
+            mpu6500_getAccel(&Acc);                 // Get accelleration data (Note: Blocking read) puts a force vector with 1G = 4096 into x, y, z directions respectively
+            y = Acc.y / 16384;                      // Scale to G values
 
             // Compare y to the gravitational pull, y is higher then 0.8 G we're in the Green zone
             if(y>=0.8)  {
-                if(G == 0){
+                if(G==0){
                     LCD_Clear(GREEN);
                     G=1;
-                    //T1setPWMmotorB(0);
                     R=0;
                 }
             } else {
                 if(R==0){
                     LCD_Clear(RED);
-                    //T1setPWMmotorB(1);
-                    R=1;
                     redReps += 1;
+                    R=1;
                     G=0;
                     if((redReps%10)==0 && (redReps>0)) {
                         // Send vibration ... Or.... Light LED
@@ -98,9 +93,43 @@ int main(void) {
                     T1setPWMmotorB(1);
                 } else T1setPWMmotorB(0);
             }
-
-            S=0;        // Makes it so we can go back to button OFF / Clear screen to black.
+            S = 0;
         }
+        /*
+        
+        // Get accelleration data (Note: Blocking read) puts a force vector with 1G = 4096 into x, y, z directions respectively
+        mpu6500_getAccel(&Acc);
+
+        // Add information from Acc2, our IMU on the wrist 
+
+        // Scale to G values
+        y = Acc.y / 16384;
+
+        // Compare y to the gravitational pull, y is higher then 0.8 G we're in the Green zone
+        if(y>=0.8)  {
+            if(G==0){
+                LCD_Clear(GREEN);
+                G=1;
+                R=0;
+            }
+        } else {
+            if(R==0){
+                LCD_Clear(RED);
+                R=1;
+                redReps += 1;
+                G=0;
+                if((redReps%10)==0 && (redReps>0)) {
+                     // Send vibration ... Or.... Light LED
+                     startH_mtime = get_timer_value();
+                }
+            }
+            deltaH_mtime = get_timer_value() - startH_mtime;
+            if (deltaH_mtime < (SystemCoreClock/4000.0 *hepticPeriod)){
+                T1setPWMmotorB(1);
+            } else T1setPWMmotorB(0);
+        }
+        */
+        
 
         /////////////////////////////////////////////////// SD-Card //////////////////////////////////////////////////////////// 
         // Count up the time passed in ms
